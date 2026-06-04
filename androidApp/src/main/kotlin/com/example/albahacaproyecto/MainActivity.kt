@@ -19,6 +19,8 @@ class MainActivity : ComponentActivity() {
                 ) {
                     // Llamada limpia, sin parámetros extra
                     DefinitiveLoginScreen()
+
+                    print("holaaaaa")
                 }
             }
         }
