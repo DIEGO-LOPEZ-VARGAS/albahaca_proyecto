@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 
 class MainActivity : ComponentActivity() {
@@ -17,10 +18,15 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Llamada limpia, sin parámetros extra
-                    DefinitiveLoginScreen()
+                    // Controla qué pantalla se muestra
+                    var pantallaActual by remember { mutableStateOf("login") }
 
-                    print("holaaaaa")
+                    when (pantallaActual) {
+                        "login" -> DefinitiveLoginScreen(
+                            onLoginExitoso = { pantallaActual = "menu" }
+                        )
+                        "menu"  -> MainMenuScreen()
+                    }
                 }
             }
         }
