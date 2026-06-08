@@ -128,13 +128,31 @@ fun MainMenuScreen() {
                     }
                 }
 
-                "ver_guardar_verduras" -> VistaGenerica("🥦 Apartado de Verduras")
-                "crear_recetas"        -> VistaGenerica("🍳 Creador de Recetas")
-                "recetas_guardadas"    -> VistaGenerica("📖 Recetario Local")
+                "ver_guardar_verduras" -> FrutaFormView()
+                "crear_recetas"        -> RecetaView()
+                "recetas_guardadas"    -> RecetaLocalView()
 
                 // ── NUEVA sección – muestra la pantalla de la Rama 3 ─────
                 "railway_status"       -> RailwayStatusScreen()
             }
+        }
+    }
+}
+
+@Composable
+fun RecetaLocalView() {
+    val local = RecetaStorage.ultimaRecetaGuardada
+    Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+        if (local != null) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Última Receta Local", style = MaterialTheme.typography.headlineSmall)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Título: ${local.titulo}", fontWeight = FontWeight.Bold)
+                Text("Ingredientes: ${local.ingredientes}")
+                Text("Pasos: ${local.pasos}")
+            }
+        } else {
+            Text("No hay recetas en el almacenamiento local.")
         }
     }
 }
