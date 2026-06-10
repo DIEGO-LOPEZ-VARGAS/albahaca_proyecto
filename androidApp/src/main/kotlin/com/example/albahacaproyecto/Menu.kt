@@ -103,18 +103,19 @@ fun MainMenuScreen() {
 
                         }
                         // ── Fila 3: Productos Rama 2 ──────────────────────────────
+
                         item {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 TarjetaMenu(
-                                    "📦",
-                                    "Productos\nRama 2",
-                                    "Despensa y refrigerador",
+                                    "🛒",
+                                    "Lista de\nCompras",
+                                    "Productos a comprar",
                                     verdeFondoIcono,
                                     Modifier.weight(1f)
-                                ) { seccionActual = "productos_rama2" }
+                                ) { seccionActual = "lista_compras" }
                             }
                         }
 
@@ -150,7 +151,8 @@ fun MainMenuScreen() {
 
                 // ── NUEVA sección – muestra la pantalla de la Rama 3 ─────
                 "railway_status"       -> RailwayStatusScreen()
-                "productos_rama2"      -> ProductosScreen()
+
+                "lista_compras"        -> ListaComprasScreen()
             }
         }
     }

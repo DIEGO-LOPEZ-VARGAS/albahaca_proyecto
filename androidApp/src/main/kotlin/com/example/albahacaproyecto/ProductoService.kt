@@ -46,7 +46,7 @@ data class ProductoLocal(
 
 object ProductosService {
 
-    private val BASE_URL = "http://10.0.2.2:8080"
+    private val BASE_URL = "http://192.168.1.70:8080"
 
     private val client = HttpClient(Android) {
         install(ContentNegotiation) {
@@ -57,6 +57,11 @@ object ProductosService {
     /** GET /api/rama2/productos */
     suspend fun obtenerProductos(): ProductosResponse {
         return client.get("$BASE_URL/api/rama2/productos").body()
+    }
+
+
+    suspend fun obtenerCompras(): ProductosResponse {
+        return client.get("$BASE_URL/api/rama2/compras").body()
     }
 }
 

@@ -35,7 +35,7 @@ object KtorClient {
                 }
             """.trimIndent()
 
-            val response = client.post("http://10.0.2.2:8080/login") {
+            val response = client.post("http://192.168.1.70:8080/login") {
 
                 contentType(ContentType.Application.Json)
 

@@ -1,3 +1,4 @@
+
 package com.example.albahacaproyecto
 
 import androidx.compose.foundation.background
@@ -297,4 +298,43 @@ fun ListaComprasScreen() {
                                 Text(
                                     item.nombre,
                                     fontWeight = FontWeight.SemiBold,
-                                    fontS
+                                    fontSize = 15.sp,
+                                    color = if (item.comprado) grisTextoSecundario else Color(0xFF111827),
+                                    textDecoration = if (item.comprado) TextDecoration.LineThrough else TextDecoration.None
+                                )
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("Cant: ${item.cantidad}", fontSize = 12.sp, color = grisTextoSecundario)
+                                    Text(
+                                        if (item.tipo == "refrigerador") "❄️ Refri" else "🗄️ Despensa",
+                                        fontSize = 12.sp,
+                                        color = if (item.tipo == "refrigerador") Color(0xFF1565C0) else verdePrincipal
+                                    )
+                                }
+                            }
+                            IconButton(onClick = { ComprasRepository.eliminar(item.id) }) {
+                                Text("🗑️", fontSize = 18.sp)
+                            }
+                        }
+                    }
+                }
+            }
+
+            item { Spacer(Modifier.height(24.dp)) }
+        }
+    }
+}
+
+@Composable
+private fun TarjetaEstadistica(titulo: String, valor: String, fondo: Color, textoColor: Color, modifier: Modifier) {
+    Box(
+        modifier = modifier
+            .background(fondo, RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(valor, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = textoColor)
+            Text(titulo, fontSize = 11.sp, color = textoColor)
+        }
+    }
+}
