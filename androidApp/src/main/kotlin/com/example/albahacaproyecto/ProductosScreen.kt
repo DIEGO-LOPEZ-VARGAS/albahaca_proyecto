@@ -3,7 +3,6 @@ package com.example.albahacaproyecto
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -45,14 +44,14 @@ fun ProductosScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     "Productos Rama 2",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF111827),
-                    modifier = Modifier.align(Alignment.Center)
+                    color = Color(0xFF111827)
                 )
             }
         },
@@ -66,7 +65,6 @@ fun ProductosScreen() {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // ── Tarjeta principal ──────────────────────────────────────────
             item {
                 ElevatedCard(
                     shape = RoundedCornerShape(20.dp),
@@ -140,7 +138,6 @@ fun ProductosScreen() {
                 }
             }
 
-            // ── Lista de productos ─────────────────────────────────────────
             item {
                 Text(
                     "📦 Almacenamiento Local Registrado",
@@ -161,7 +158,8 @@ fun ProductosScreen() {
                     )
                 }
             } else {
-                items(productos) { producto ->
+                items(count = productos.size) { index ->
+                    val producto = productos[index]
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

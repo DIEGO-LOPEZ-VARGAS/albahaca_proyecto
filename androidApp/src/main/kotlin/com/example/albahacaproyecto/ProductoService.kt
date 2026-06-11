@@ -58,10 +58,15 @@ object ProductosService {
     suspend fun obtenerProductos(): ProductosResponse {
         return client.get("$BASE_URL/api/rama2/productos").body()
     }
+
+    /** GET /api/rama2/compras */
+    suspend fun obtenerCompras(): ProductosResponse {
+        return client.get("$BASE_URL/api/rama2/compras").body()
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// REPOSITORIO LOCAL
+// REPOSITORIO LOCAL (EN MEMORIA)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ProductosRepository {
