@@ -92,7 +92,7 @@ fun RailwayStatusScreen() {
                         }
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "URL: http://10.0.2.2:8080",
+                            "URL: https://backend-production-523ba.up.railway.app",
                             fontSize = 12.sp,
                             color = grisTextoSecundario
                         )

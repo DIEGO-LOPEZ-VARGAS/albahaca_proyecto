@@ -24,7 +24,7 @@ data class Receta(
 
 class RecetaApiClient {
     private val client = HttpClient()
-    private val BASE_URL = "http://10.0.2.2:8080/api/recetas"
+    private val BASE_URL = "https://backend-production-523ba.up.railway.app/api/recetas"
 
     suspend fun enviarReceta(receta: Receta): String {
         return try {

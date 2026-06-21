@@ -22,7 +22,7 @@ class FrutaApiClient {
             // Mandamos el JSON manual para evitar líos de plugins
             val jsonManual = "{\"nombre\":\"${fruta.nombre}\",\"cantidad\":${fruta.cantidad}}"
 
-            val response = client.post("http://10.0.2.2:8080/api/frutas") {
+            val response = client.post("https://backend-production-523ba.up.railway.app/api/frutas") {
                 contentType(ContentType.Application.Json)
                 setBody(jsonManual)
             }
@@ -37,7 +37,7 @@ class FrutaApiClient {
     // Esta función traerá todo el historial para mostrarlo en pantalla
     suspend fun obtenerFrutas(): String {
         return try {
-            val response = client.get("http://10.0.2.2:8080/api/frutas")
+            val response = client.get("https://backend-production-523ba.up.railway.app/api/frutas")
             response.bodyAsText()
         } catch (e: Exception) {
             "No hay registros en el servidor."
