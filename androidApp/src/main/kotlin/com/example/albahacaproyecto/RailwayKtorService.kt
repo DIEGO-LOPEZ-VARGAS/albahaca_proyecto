@@ -49,12 +49,11 @@ data class HistorialEntry(
  * Usa el mismo engine Android y la misma configuración JSON que KtorClient,
  * pero apunta a las rutas específicas de Railway.
  *
- * Base URL: http://10.0.2.2:8080  (emulador → localhost del PC)
- * En producción Railway sería: https://tu-app.up.railway.app
+ * Base URL: https://backend-production-523ba.up.railway.app (producción Railway)
  */
 object RailwayKtorService {
 
-    private val BASE_URL = "http://10.0.2.2:8080"
+    private val BASE_URL = "https://backend-production-523ba.up.railway.app"
 
     private val client = HttpClient(Android) {
         install(ContentNegotiation) {
