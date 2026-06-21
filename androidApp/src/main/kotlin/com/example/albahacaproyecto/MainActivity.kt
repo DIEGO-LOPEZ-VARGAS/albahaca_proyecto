@@ -18,17 +18,13 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // 1. CAMBIAMOS EL INICIO: En lugar de "login", ponemos "rama1"
-                    var pantallaActual by remember { mutableStateOf("rama1") }
+                    var pantallaActual by remember { mutableStateOf("login") }
 
                     when (pantallaActual) {
                         "login" -> DefinitiveLoginScreen(
                             onLoginExitoso = { pantallaActual = "menu" }
                         )
                         "menu"  -> MainMenuScreen()
-
-                        // 2. AGREGAMOS TU PANTALLA: Aquí se manda llamar la función de tu App.kt
-                        "rama1" -> App()
                     }
                 }
             }
