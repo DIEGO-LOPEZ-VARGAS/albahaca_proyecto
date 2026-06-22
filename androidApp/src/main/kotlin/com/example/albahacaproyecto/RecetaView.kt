@@ -2,37 +2,25 @@ package com.example.albahacaproyecto
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class Receta(
-    val titulo: String,
-    val ingredientes: String,
-    val pasos: String
-)
 
 class RecetaApiClient {
-    private val client = HttpClient()
-    private val BASE_URL = "https://backend-production-523ba.up.railway.app/api/recetas"
+    private val client = KtorClient.client
+    private val BASE_URL = KtorClient.BASE_URL + "/api/recetas"
 
     suspend fun enviarReceta(receta: Receta): String {
         return try {
-            // JSON manual para evitar configuraciones complejas en el examen
-            val json = "{\"titulo\":\"${receta.titulo}\",\"ingredientes\":\"${receta.ingredientes}\",\"pasos\":\"${receta.pasos}\"}"
             val response = client.post(BASE_URL) {
                 contentType(ContentType.Application.Json)
-                setBody(json)
+                setBody(receta)
             }
             response.bodyAsText()
         } catch (e: Exception) {

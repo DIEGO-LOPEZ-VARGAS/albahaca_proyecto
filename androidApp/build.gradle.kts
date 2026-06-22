@@ -23,6 +23,7 @@ dependencies {
     debugImplementation(libs.compose.uiTooling)
 
     implementation(compose.material3)
+    implementation(compose.materialIconsExtended)
 
     // Retrofit
     implementation("com.squareup.retrofit2:retrofit:2.9.0")

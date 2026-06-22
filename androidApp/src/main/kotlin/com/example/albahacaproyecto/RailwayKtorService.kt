@@ -1,34 +1,11 @@
 package com.example.albahacaproyecto
 
-import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.engine.android.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MODELOS  (comparten package con el resto del proyecto)
+// MODELOS LOCALES DE UI
 // ─────────────────────────────────────────────────────────────────────────────
-
-/** Respuesta del end-point GET /api/railway/status */
-@Serializable
-data class RailwayStatusResponse(
-    val online: Boolean,
-    val serverUrl: String,
-    val latencyMs: Long,
-    val routes: List<RouteInfo>
-)
-
-/** Información de una ruta registrada en el servidor Ktor */
-@Serializable
-data class RouteInfo(
-    val method: String,
-    val path: String,
-    val description: String
-)
 
 /** Registro guardado localmente de cada petición realizada */
 data class HistorialEntry(
@@ -40,30 +17,16 @@ data class HistorialEntry(
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SERVICIO HTTP  –  extiende la misma estrategia de KtorClient.kt existente
+// SERVICIO HTTP
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Consumo del end-point de la Rama 3.
- *
- * Usa el mismo engine Android y la misma configuración JSON que KtorClient,
- * pero apunta a las rutas específicas de Railway.
- *
- * Base URL: https://backend-production-523ba.up.railway.app (producción Railway)
- */
 object RailwayKtorService {
 
-    private val BASE_URL = "https://backend-production-523ba.up.railway.app"
-
-    private val client = HttpClient(Android) {
-        install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true })
-        }
-    }
+    private val client = KtorClient.client
+    private val BASE_URL = KtorClient.BASE_URL
 
     /**
      * GET /api/railway/status
-     * Devuelve el estado del servidor y la lista de rutas registradas.
      */
     suspend fun obtenerEstado(): RailwayStatusResponse {
         return client.get("$BASE_URL/api/railway/status").body()
@@ -71,7 +34,6 @@ object RailwayKtorService {
 
     /**
      * GET /api/railway/ping
-     * Respuesta mínima para medir latencia.
      */
     suspend fun ping(): Long {
         val inicio = System.currentTimeMillis()
@@ -81,25 +43,16 @@ object RailwayKtorService {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// REPOSITORIO LOCAL  –  almacenamiento en memoria (reemplazable por SQLDelight)
+// REPOSITORIO LOCAL
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Persiste el historial de peticiones HTTP realizadas al servidor.
- *
- * Actualmente usa una lista en memoria para no añadir dependencias nuevas
- * al proyecto. Para persistencia real entre sesiones, reemplaza la lista
- * por SQLDelight (ver AppDatabase.sq adjunto).
- */
 class RailwayRepository {
 
     companion object {
-        // Singleton compartido para que el historial sobreviva recomposiciones
         private val _historial = mutableListOf<HistorialEntry>()
         private var _nextId = 1
     }
 
-    /** Guarda un registro de la petición realizada */
     suspend fun guardarPeticion(method: String, ruta: String, statusCode: Int) {
         val hora = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
             .format(java.util.Date())
@@ -115,6 +68,5 @@ class RailwayRepository {
         )
     }
 
-    /** Retorna los últimos 15 registros del historial */
     suspend fun obtenerHistorial(): List<HistorialEntry> = _historial.take(15)
 }

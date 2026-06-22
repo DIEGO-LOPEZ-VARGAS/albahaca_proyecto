@@ -102,7 +102,7 @@ fun MainMenuScreen() {
                             }
 
                         }
-                        // ── Fila 3: Productos Rama 2 ──────────────────────────────
+                        // ── Fila 3: Productos Rama 2 y Lista de Compras ──────────────────
                         item {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -115,6 +115,14 @@ fun MainMenuScreen() {
                                     verdeFondoIcono,
                                     Modifier.weight(1f)
                                 ) { seccionActual = "productos_rama2" }
+
+                                TarjetaMenu(
+                                    "🛒",
+                                    "Lista de\nCompras",
+                                    "Gestionar faltantes",
+                                    verdeFondoIcono,
+                                    Modifier.weight(1f)
+                                ) { seccionActual = "lista_compras" }
                             }
                         }
 
@@ -151,6 +159,7 @@ fun MainMenuScreen() {
                 // ── NUEVA sección – muestra la pantalla de la Rama 3 ─────
                 "railway_status"       -> RailwayStatusScreen()
                 "productos_rama2"      -> ProductosScreen()
+                "lista_compras"        -> ListaComprasScreen()
             }
         }
     }

@@ -1,6 +1,5 @@
 package com.example.albahacaproyecto
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,6 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -45,11 +47,6 @@ object ComprasRepository {
         }
     }
 
-    fun agregarManual(nombre: String, cantidad: Int, tipo: String) {
-        val nuevoId = (_items.maxOfOrNull { it.id } ?: 0) + 1
-        _items.add(ItemCompra(nuevoId, nombre, cantidad, tipo))
-    }
-
     fun marcarComprado(id: Int) {
         val idx = _items.indexOfFirst { it.id == id }
         if (idx >= 0) _items[idx] = _items[idx].copy(comprado = !_items[idx].comprado)
@@ -62,12 +59,17 @@ object ComprasRepository {
     fun limpiarComprados() {
         _items.removeAll { it.comprado }
     }
+
+    fun limpiarLista() {
+        _items.clear()
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PANTALLA
 // ─────────────────────────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListaComprasScreen() {
     val verdePrincipal      = Color(0xFF2E5A39)
@@ -134,14 +136,33 @@ fun ListaComprasScreen() {
                 Button(
                     onClick = {
                         if (nuevoNombre.isNotBlank()) {
-                            ComprasRepository.agregarManual(
-                                nuevoNombre.trim(),
-                                nuevaCantidad.toIntOrNull() ?: 1,
-                                nuevoTipo
-                            )
-                            nuevoNombre = ""
-                            nuevaCantidad = "1"
-                            mostrarDialogo = false
+                            scope.launch {
+                                try {
+                                    val nuevaCompra = Producto(
+                                        id = 0,
+                                        nombre_producto = nuevoNombre.trim(),
+                                        cantidad = nuevaCantidad.toIntOrNull() ?: 1,
+                                        fecha_caducidad = "N/A",
+                                        tipo_almacenamiento = nuevoTipo,
+                                        disponible = true
+                                    )
+                                    ProductosService.agregarCompra(nuevaCompra)
+                                    
+                                    // Sincronizar después de agregar
+                                    val respuesta = ProductosService.obtenerCompras()
+                                    repository.guardarProductos(respuesta.productos)
+                                    // Recargar lista local
+                                    val locales = repository.obtenerProductosLocales()
+                                    ComprasRepository.limpiarLista() // Nuevo método para evitar duplicados
+                                    ComprasRepository.agregarDesdeBackend(locales)
+                                    
+                                    nuevoNombre = ""
+                                    nuevaCantidad = "1"
+                                    mostrarDialogo = false
+                                } catch (e: Exception) {
+                                    mensajeError = "Error al guardar: ${e.message}"
+                                }
+                            }
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = verdePrincipal)
@@ -255,10 +276,8 @@ fun ListaComprasScreen() {
                 item {
                     TextButton(
                         onClick = { ComprasRepository.limpiarComprados() },
-                        colors = ButtonColors(
-                            containerColor = Color.Transparent,
+                        colors = ButtonDefaults.textButtonColors(
                             contentColor = rojoAlertaTexto,
-                            disabledContainerColor = Color.Transparent,
                             disabledContentColor = Color.Gray
                         )
                     ) { Text("🗑️ Eliminar comprados") }
@@ -289,7 +308,16 @@ fun ListaComprasScreen() {
                         ) {
                             Checkbox(
                                 checked = item.comprado,
-                                onCheckedChange = { ComprasRepository.marcarComprado(item.id) },
+                                onCheckedChange = { nuevoEstado ->
+                                    scope.launch {
+                                        try {
+                                            ProductosService.actualizarCompra(item.id, nuevoEstado)
+                                            ComprasRepository.marcarComprado(item.id)
+                                        } catch (e: Exception) {
+                                            mensajeError = "Error al actualizar"
+                                        }
+                                    }
+                                },
                                 colors = CheckboxDefaults.colors(checkedColor = verdePrincipal)
                             )
                             Spacer(Modifier.width(8.dp))
@@ -297,4 +325,57 @@ fun ListaComprasScreen() {
                                 Text(
                                     item.nombre,
                                     fontWeight = FontWeight.SemiBold,
-                                    fontS
+                                    fontSize = 16.sp,
+                                    color = if (item.comprado) grisTextoSecundario else Color(0xFF111827),
+                                    style = if (item.comprado) TextStyle(textDecoration = TextDecoration.LineThrough) else TextStyle.Default
+                                )
+                                Text(
+                                    "${item.cantidad} unidades • ${item.tipo}",
+                                    fontSize = 12.sp,
+                                    color = grisTextoSecundario
+                                )
+                            }
+                            IconButton(onClick = { 
+                                scope.launch {
+                                    try {
+                                        ProductosService.eliminarCompra(item.id)
+                                        ComprasRepository.eliminar(item.id)
+                                    } catch (e: Exception) {
+                                        mensajeError = "Error al eliminar"
+                                    }
+                                }
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Eliminar",
+                                    tint = Color(0xFFEF4444)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENTES AUXILIARES
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+fun TarjetaEstadistica(titulo: String, valor: String, fondo: Color, colorTexto: Color, modifier: Modifier = Modifier) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = fondo),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(titulo, fontSize = 11.sp, color = colorTexto, fontWeight = FontWeight.Bold)
+            Text(valor, fontSize = 20.sp, color = colorTexto, fontWeight = FontWeight.ExtraBold)
+        }
+    }
+}
