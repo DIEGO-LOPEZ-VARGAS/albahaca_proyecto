@@ -102,7 +102,7 @@ fun MainMenuScreen() {
                             }
 
                         }
-                        // ── Fila 3: Productos Rama 2 y Lista de Compras ──────────────────
+                        // ── Fila 3: Productos Rama 2 y Lista de Compras ──────────
                         item {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -111,7 +111,7 @@ fun MainMenuScreen() {
                                 TarjetaMenu(
                                     "📦",
                                     "Productos\nRama 2",
-                                    "Despensa y refrigerador",
+                                    "Inventario",
                                     verdeFondoIcono,
                                     Modifier.weight(1f)
                                 ) { seccionActual = "productos_rama2" }
@@ -119,7 +119,7 @@ fun MainMenuScreen() {
                                 TarjetaMenu(
                                     "🛒",
                                     "Lista de\nCompras",
-                                    "Gestionar faltantes",
+                                    "Pendientes",
                                     verdeFondoIcono,
                                     Modifier.weight(1f)
                                 ) { seccionActual = "lista_compras" }

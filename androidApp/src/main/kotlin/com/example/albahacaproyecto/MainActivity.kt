@@ -15,17 +15,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
+            var isLoggedIn by remember { mutableStateOf(false) }
+
             MaterialTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    var isLoggedIn by remember { mutableStateOf(false) }
-
                     if (!isLoggedIn) {
-                        DefinitiveLoginScreen(onLoginExitoso = {
-                            isLoggedIn = true
-                        })
+                        DefinitiveLoginScreen(onLoginExitoso = { isLoggedIn = true })
                     } else {
                         MainMenuScreen()
                     }

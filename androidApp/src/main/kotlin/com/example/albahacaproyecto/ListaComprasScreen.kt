@@ -1,9 +1,8 @@
 package com.example.albahacaproyecto
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -12,9 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -47,6 +43,11 @@ object ComprasRepository {
         }
     }
 
+    fun agregarManual(nombre: String, cantidad: Int, tipo: String) {
+        val nuevoId = (_items.maxOfOrNull { it.id } ?: 0) + 1
+        _items.add(ItemCompra(nuevoId, nombre, cantidad, tipo))
+    }
+
     fun marcarComprado(id: Int) {
         val idx = _items.indexOfFirst { it.id == id }
         if (idx >= 0) _items[idx] = _items[idx].copy(comprado = !_items[idx].comprado)
@@ -59,17 +60,12 @@ object ComprasRepository {
     fun limpiarComprados() {
         _items.removeAll { it.comprado }
     }
-
-    fun limpiarLista() {
-        _items.clear()
-    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PANTALLA
 // ─────────────────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListaComprasScreen() {
     val verdePrincipal      = Color(0xFF2E5A39)
@@ -90,12 +86,12 @@ fun ListaComprasScreen() {
 
     val scope      = rememberCoroutineScope()
     val repository = remember { ProductosRepository() }
-    val items      = ComprasRepository.items
+    val todosLosItems = ComprasRepository.items
 
     val itemsFiltrados = when (filtro) {
-        "pendientes" -> items.filter { !it.comprado }
-        "comprados"  -> items.filter { it.comprado }
-        else         -> items
+        "pendientes" -> todosLosItems.filter { !it.comprado }
+        "comprados"  -> todosLosItems.filter { it.comprado }
+        else         -> todosLosItems
     }
 
     // ── Diálogo agregar producto ──────────────────────────────────────────
@@ -136,33 +132,14 @@ fun ListaComprasScreen() {
                 Button(
                     onClick = {
                         if (nuevoNombre.isNotBlank()) {
-                            scope.launch {
-                                try {
-                                    val nuevaCompra = Producto(
-                                        id = 0,
-                                        nombre_producto = nuevoNombre.trim(),
-                                        cantidad = nuevaCantidad.toIntOrNull() ?: 1,
-                                        fecha_caducidad = "N/A",
-                                        tipo_almacenamiento = nuevoTipo,
-                                        disponible = true
-                                    )
-                                    ProductosService.agregarCompra(nuevaCompra)
-                                    
-                                    // Sincronizar después de agregar
-                                    val respuesta = ProductosService.obtenerCompras()
-                                    repository.guardarProductos(respuesta.productos)
-                                    // Recargar lista local
-                                    val locales = repository.obtenerProductosLocales()
-                                    ComprasRepository.limpiarLista() // Nuevo método para evitar duplicados
-                                    ComprasRepository.agregarDesdeBackend(locales)
-                                    
-                                    nuevoNombre = ""
-                                    nuevaCantidad = "1"
-                                    mostrarDialogo = false
-                                } catch (e: Exception) {
-                                    mensajeError = "Error al guardar: ${e.message}"
-                                }
-                            }
+                            ComprasRepository.agregarManual(
+                                nuevoNombre.trim(),
+                                nuevaCantidad.toIntOrNull() ?: 1,
+                                nuevoTipo
+                            )
+                            nuevoNombre = ""
+                            nuevaCantidad = "1"
+                            mostrarDialogo = false
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = verdePrincipal)
@@ -180,14 +157,14 @@ fun ListaComprasScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     "🛒 Lista de Compras",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF111827),
-                    modifier = Modifier.align(Alignment.Center)
+                    color = Color(0xFF111827)
                 )
             }
         },
@@ -256,9 +233,9 @@ fun ListaComprasScreen() {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    TarjetaEstadistica("📋 Total", "${items.size}", Color(0xFFE3F2FD), Color(0xFF1565C0), Modifier.weight(1f))
-                    TarjetaEstadistica("⏳ Pendientes", "${items.count { !it.comprado }}", amarilloFondo, amarilloTexto, Modifier.weight(1f))
-                    TarjetaEstadistica("✅ Comprados", "${items.count { it.comprado }}", verdeComprado, verdePrincipal, Modifier.weight(1f))
+                    TarjetaEstadistica("📋 Total", "${todosLosItems.size}", Color(0xFFE3F2FD), Color(0xFF1565C0), Modifier.weight(1f))
+                    TarjetaEstadistica("⏳ Pendientes", "${todosLosItems.count { !it.comprado }}", amarilloFondo, amarilloTexto, Modifier.weight(1f))
+                    TarjetaEstadistica("✅ Comprados", "${todosLosItems.count { it.comprado }}", verdeComprado, verdePrincipal, Modifier.weight(1f))
                 }
             }
 
@@ -272,14 +249,11 @@ fun ListaComprasScreen() {
             }
 
             // ── Botón limpiar comprados ───────────────────────────────────
-            if (items.any { it.comprado }) {
+            if (todosLosItems.any { it.comprado }) {
                 item {
                     TextButton(
                         onClick = { ComprasRepository.limpiarComprados() },
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = rojoAlertaTexto,
-                            disabledContentColor = Color.Gray
-                        )
+                        colors = ButtonDefaults.textButtonColors(contentColor = rojoAlertaTexto)
                     ) { Text("🗑️ Eliminar comprados") }
                 }
             }
@@ -294,11 +268,12 @@ fun ListaComprasScreen() {
                     )
                 }
             } else {
-                items(itemsFiltrados, key = { it.id }) { item ->
+                items(count = itemsFiltrados.size) { index: Int ->
+                    val itemCompra = itemsFiltrados[index]
                     ElevatedCard(
                         shape = RoundedCornerShape(14.dp),
                         colors = CardDefaults.elevatedCardColors(
-                            containerColor = if (item.comprado) verdeComprado else Color.White
+                            containerColor = if (itemCompra.comprado) verdeComprado else Color.White
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -307,75 +282,56 @@ fun ListaComprasScreen() {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Checkbox(
-                                checked = item.comprado,
-                                onCheckedChange = { nuevoEstado ->
-                                    scope.launch {
-                                        try {
-                                            ProductosService.actualizarCompra(item.id, nuevoEstado)
-                                            ComprasRepository.marcarComprado(item.id)
-                                        } catch (e: Exception) {
-                                            mensajeError = "Error al actualizar"
-                                        }
-                                    }
-                                },
+                                checked = itemCompra.comprado,
+                                onCheckedChange = { ComprasRepository.marcarComprado(itemCompra.id) },
                                 colors = CheckboxDefaults.colors(checkedColor = verdePrincipal)
                             )
                             Spacer(Modifier.width(8.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    item.nombre,
+                                    itemCompra.nombre,
                                     fontWeight = FontWeight.SemiBold,
-                                    fontSize = 16.sp,
-                                    color = if (item.comprado) grisTextoSecundario else Color(0xFF111827),
-                                    style = if (item.comprado) TextStyle(textDecoration = TextDecoration.LineThrough) else TextStyle.Default
+                                    fontSize = 15.sp,
+                                    color = if (itemCompra.comprado) grisTextoSecundario else Color(0xFF111827),
+                                    textDecoration = if (itemCompra.comprado) TextDecoration.LineThrough else TextDecoration.None
                                 )
                                 Text(
-                                    "${item.cantidad} unidades • ${item.tipo}",
+                                    "${itemCompra.cantidad} unidades · ${itemCompra.tipo}",
                                     fontSize = 12.sp,
                                     color = grisTextoSecundario
                                 )
                             }
-                            IconButton(onClick = { 
-                                scope.launch {
-                                    try {
-                                        ProductosService.eliminarCompra(item.id)
-                                        ComprasRepository.eliminar(item.id)
-                                    } catch (e: Exception) {
-                                        mensajeError = "Error al eliminar"
-                                    }
-                                }
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Eliminar",
-                                    tint = Color(0xFFEF4444)
-                                )
+                            IconButton(onClick = { ComprasRepository.eliminar(itemCompra.id) }) {
+                                Text("🗑️", fontSize = 18.sp)
                             }
                         }
                     }
                 }
             }
+            item { Spacer(Modifier.height(24.dp)) }
         }
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// COMPONENTES AUXILIARES
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Composable
-fun TarjetaEstadistica(titulo: String, valor: String, fondo: Color, colorTexto: Color, modifier: Modifier = Modifier) {
-    Card(
+fun TarjetaEstadistica(
+    titulo: String,
+    valor: String,
+    fondo: Color,
+    colorTexto: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = fondo,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = fondo),
         modifier = modifier
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(titulo, fontSize = 11.sp, color = colorTexto, fontWeight = FontWeight.Bold)
-            Text(valor, fontSize = 20.sp, color = colorTexto, fontWeight = FontWeight.ExtraBold)
+            Text(titulo, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colorTexto.copy(alpha = 0.7f))
+            Text(valor, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = colorTexto)
         }
     }
 }

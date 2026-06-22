@@ -58,7 +58,7 @@ fun DefinitiveLoginScreen(onLoginExitoso: () -> Unit = {}) {
             onClick = {
                 coroutineScope.launch {
                     isLoading = true
-                    val codigo = KtorClient.enviarLogin(usuario, contrasena,)
+                    val codigo = KtorClient.enviarLogin(usuario, contrasena)
 
                     when (codigo) {
                         200  -> onLoginExitoso()  // navega al menú principal

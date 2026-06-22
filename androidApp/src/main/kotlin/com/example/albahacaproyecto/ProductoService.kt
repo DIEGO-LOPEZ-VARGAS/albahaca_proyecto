@@ -1,14 +1,34 @@
 package com.example.albahacaproyecto
 
+import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.engine.android.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MODELO LOCAL (Para UI)
+// MODELOS
 // ─────────────────────────────────────────────────────────────────────────────
+
+@Serializable
+data class Producto(
+    val id: Int,
+    val nombre_producto: String,
+    val cantidad: Int,
+    val fecha_caducidad: String,
+    val tipo_almacenamiento: String,
+    val disponible: Boolean
+)
+
+@Serializable
+data class ProductosResponse(
+    val rama: String,
+    val total: Int,
+    val productos: List<Producto>
+)
 
 data class ProductoLocal(
     val id: Int,
@@ -26,8 +46,13 @@ data class ProductoLocal(
 
 object ProductosService {
 
-    private val client = KtorClient.client
-    private val BASE_URL = KtorClient.BASE_URL
+    private val BASE_URL = "http://10.0.2.2:8080"
+
+    private val client = HttpClient(Android) {
+        install(ContentNegotiation) {
+            json(Json { ignoreUnknownKeys = true })
+        }
+    }
 
     /** GET /api/rama2/productos */
     suspend fun obtenerProductos(): ProductosResponse {
@@ -38,30 +63,10 @@ object ProductosService {
     suspend fun obtenerCompras(): ProductosResponse {
         return client.get("$BASE_URL/api/rama2/compras").body()
     }
-
-    /** POST /api/rama2/compras */
-    suspend fun agregarCompra(producto: Producto): String {
-        return client.post("$BASE_URL/api/rama2/compras") {
-            contentType(io.ktor.http.ContentType.Application.Json)
-            setBody(producto)
-        }.bodyAsText()
-    }
-
-    /** PUT /api/rama2/compras/{id} */
-    suspend fun actualizarCompra(id: Int, comprado: Boolean): String {
-        return client.put("$BASE_URL/api/rama2/compras/$id") {
-            parameter("comprado", comprado)
-        }.bodyAsText()
-    }
-
-    /** DELETE /api/rama2/compras/{id} */
-    suspend fun eliminarCompra(id: Int): String {
-        return client.delete("$BASE_URL/api/rama2/compras/$id").bodyAsText()
-    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// REPOSITORIO LOCAL
+// REPOSITORIO LOCAL (EN MEMORIA)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ProductosRepository {
