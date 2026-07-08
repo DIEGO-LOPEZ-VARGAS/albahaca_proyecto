@@ -2,11 +2,15 @@ package com.example.albahacaproyecto
 
 import android.util.Log
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
@@ -43,11 +47,36 @@ data class RouteInfo(
 )
 
 @Serializable
+data class Actividad(
+    val id: Int,
+    val accion: String,
+    val detalle: String,
+    val fecha: String
+)
+
+@Serializable
 data class RailwayStatusResponse(
     val online: Boolean,
     val serverUrl: String,
     val latencyMs: Long,
     val routes: List<RouteInfo>
+)
+
+@Serializable
+data class RegisterRequest(
+    val nombre: String,
+    val email: String,
+    val password: String,
+    val role: String = "user"
+)
+
+@Serializable
+data class LoginResponse(
+    val status: Int,
+    val message: String,
+    val token: String? = null,
+    val role: String? = null,
+    val nombre: String? = null
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -56,6 +85,10 @@ data class RailwayStatusResponse(
 
 object KtorClient {
     const val BASE_URL = "https://backend-production-523ba.up.railway.app"
+    
+    // Variable para guardar el token de sesión
+    var sessionToken: String? = null
+
     val client = HttpClient(Android) {
         install(ContentNegotiation) {
             json(Json {
@@ -64,26 +97,52 @@ object KtorClient {
             })
         }
     }
+    
     suspend fun enviarLogin(usuario: String, contrasena: String): Int {
         return try {
-            // TÉCNICA 6: Depuración de Peticiones Cliente-Servidor (Log de la URL)
-
             Log.d("DEPURACION_ALBAHACA", "Enviando POST a: $BASE_URL/login")
             val response = client.post("$BASE_URL/login") {
                 contentType(ContentType.Application.Json)
                 setBody(LoginRequest(usuario, contrasena))
             }
-            // TÉCNICA 3: Registro de Eventos (Logging para éxito)
-
+            
+            if (response.status.value == 200) {
+                val loginData = response.body<LoginResponse>()
+                sessionToken = loginData.token
+                Log.d("DEPURACION_ALBAHACA", "TOKEN RECIBIDO: $sessionToken")
+            }
+            
             Log.d("DEPURACION_ALBAHACA", "RESPUESTA RECIBIDA: Status Code = ${response.status.value}")
             response.status.value
         } catch (e: Exception) {
-            // TÉCNICA 8: Manejo de Excepciones (Exception Debugging)
-
             Log.e("DEPURACION_ALBAHACA", "--- FALLA DETECTADA ---")
             Log.e("DEPURACION_ALBAHACA", "Causa del error: ${e.message}")
-            Log.e("DEPURACION_ALBAHACA", "Tipo de excepción: ${e.javaClass.simpleName}")
-            0 // Retornamos 0 para manejar el error en la interfaz
+            0
+        }
+    }
+
+    suspend fun enviarRegistro(nombre: String, email: String, contrasena: String): Int {
+        return try {
+            Log.d("DEPURACION_ALBAHACA", "Enviando POST a: $BASE_URL/register")
+            val response = client.post("$BASE_URL/register") {
+                contentType(ContentType.Application.Json)
+                setBody(RegisterRequest(nombre, email, contrasena))
+            }
+            Log.d("DEPURACION_ALBAHACA", "RESPUESTA REGISTRO: ${response.status.value}")
+            response.status.value
+        } catch (e: Exception) {
+            Log.e("DEPURACION_ALBAHACA", "Error en registro: ${e.message}")
+            0
+        }
+    }
+
+    suspend fun obtenerActividades(): List<Actividad> {
+        return try {
+            client.get("$BASE_URL/api/actividades") {
+                sessionToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+            }.body()
+        } catch (e: Exception) {
+            emptyList()
         }
     }
 }

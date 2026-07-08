@@ -42,6 +42,8 @@ dependencies {
     debugImplementation(libs.compose.uiTooling)
     implementation(libs.compose.material3)
     implementation(libs.compose.foundation)
+    implementation("androidx.compose.material:material-icons-core:1.7.5")
+    implementation("androidx.compose.material:material-icons-extended:1.7.5")
 
     // Retrofit
     implementation("com.squareup.retrofit2:retrofit:2.9.0")

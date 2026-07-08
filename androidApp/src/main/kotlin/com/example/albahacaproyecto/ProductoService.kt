@@ -5,6 +5,7 @@ import io.ktor.client.call.*
 import io.ktor.client.engine.android.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -47,7 +48,7 @@ data class ProductoLocal(
 
 object ProductosService {
 
-    private const val BASE_URL = "http://10.0.2.2:8080"
+    private const val BASE_URL = KtorClient.BASE_URL
 
     private val client = HttpClient(Android) {
         install(ContentNegotiation) {
@@ -55,14 +56,18 @@ object ProductosService {
         }
     }
 
-    /** GET /api/rama2/productos */
+    /** GET /api/compras */
     suspend fun obtenerProductos(): ProductosResponse {
-        return client.get("$BASE_URL/api/rama2/productos").body()
+        return client.get("$BASE_URL/api/compras") {
+            KtorClient.sessionToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+        }.body()
     }
 
-    /** GET /api/rama2/compras */
+    /** GET /api/compras */
     suspend fun obtenerCompras(): ProductosResponse {
-        return client.get("$BASE_URL/api/rama2/compras").body()
+        return client.get("$BASE_URL/api/compras") {
+            KtorClient.sessionToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+        }.body()
     }
 }
 

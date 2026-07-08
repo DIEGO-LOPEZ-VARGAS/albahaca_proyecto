@@ -92,7 +92,7 @@ fun RailwayStatusScreen() {
                         }
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "URL: https://backend-production-523ba.up.railway.app",
+                            "URL: ${KtorClient.BASE_URL}",
                             fontSize = 12.sp,
                             color = grisTextoSecundario
                         )
