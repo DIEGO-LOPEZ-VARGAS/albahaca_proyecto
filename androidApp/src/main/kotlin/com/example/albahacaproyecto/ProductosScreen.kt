@@ -20,14 +20,13 @@ fun ProductosScreen() {
     val verdePrincipal      = Color(0xFF2E5A39)
     val verdeFondoIcono     = Color(0xFFE8F0EA)
     val grisTextoSecundario = Color(0xFF6B7280)
-    val rojoAlertaFondo     = Color(0xFFFDE8E8)
     val rojoAlertaTexto     = Color(0xFF9B1C1C)
     val azulFondo           = Color(0xFFE3F2FD)
     val azulTexto           = Color(0xFF1565C0)
 
     var productos       by remember { mutableStateOf<List<ProductoLocal>>(emptyList()) }
     var ramaInfo        by remember { mutableStateOf("") }
-    var isLoading       by remember { mutableStateOf(false) }
+    var isLoading       by remember { mutableStateOf(value = false) }
     var mensajeError    by remember { mutableStateOf<String?>(null) }
     var mensajeExito    by remember { mutableStateOf<String?>(null) }
 
@@ -45,7 +44,7 @@ fun ProductosScreen() {
                     .fillMaxWidth()
                     .statusBarsPadding()
                     .padding(horizontal = 24.dp, vertical = 16.dp),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     "Productos Rama 2",
@@ -164,7 +163,7 @@ fun ProductosScreen() {
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(
-                                color = if (producto.tipo_almacenamiento == "refrigerador")
+                                color = if (producto.tipoAlmacenamiento == "refrigerador")
                                     azulFondo else verdeFondoIcono,
                                 shape = RoundedCornerShape(14.dp)
                             )
@@ -185,7 +184,7 @@ fun ProductosScreen() {
                             Spacer(Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    producto.nombre_producto,
+                                    producto.nombreProducto,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color(0xFF111827)
@@ -196,7 +195,7 @@ fun ProductosScreen() {
                                     color = grisTextoSecundario
                                 )
                                 Text(
-                                    "Caduca: ${producto.fecha_caducidad}",
+                                    "Caduca: ${producto.fechaCaducidad}",
                                     fontSize = 11.sp,
                                     color = rojoAlertaTexto
                                 )
@@ -211,9 +210,9 @@ fun ProductosScreen() {
                                     Color(0xFF4CAF50) else rojoAlertaTexto
                             )
                             Text(
-                                producto.tipo_almacenamiento,
+                                producto.tipoAlmacenamiento,
                                 fontSize = 11.sp,
-                                color = if (producto.tipo_almacenamiento == "refrigerador")
+                                color = if (producto.tipoAlmacenamiento == "refrigerador")
                                     azulTexto else verdePrincipal
                             )
                         }

@@ -2,10 +2,8 @@ package com.example.albahacaproyecto
 
 import android.util.Log
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -35,23 +33,6 @@ data class Receta(
     val titulo: String,
     val ingredientes: String,
     val pasos: String
-)
-
-@Serializable
-data class Producto(
-    val id: Int,
-    val nombre_producto: String,
-    val cantidad: Int,
-    val fecha_caducidad: String,
-    val tipo_almacenamiento: String,
-    val disponible: Boolean
-)
-
-@Serializable
-data class ProductosResponse(
-    val rama: String,
-    val total: Int,
-    val productos: List<Producto>
 )
 
 @Serializable

@@ -6,6 +6,7 @@ import io.ktor.client.engine.android.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -16,28 +17,28 @@ import kotlinx.serialization.json.Json
 @Serializable
 data class Producto(
     val id: Int,
-    val nombre_producto: String,
+    @SerialName("nombre_producto") val nombreProducto: String,
     val cantidad: Int,
-    val fecha_caducidad: String,
-    val tipo_almacenamiento: String,
-    val disponible: Boolean
+    @SerialName("fecha_caducidad") val fechaCaducidad: String,
+    @SerialName("tipo_almacenamiento") val tipoAlmacenamiento: String,
+    val disponible: Boolean,
 )
 
 @Serializable
 data class ProductosResponse(
     val rama: String,
     val total: Int,
-    val productos: List<Producto>
+    val productos: List<Producto>,
 )
 
 data class ProductoLocal(
     val id: Int,
-    val nombre_producto: String,
+    val nombreProducto: String,
     val cantidad: Int,
-    val fecha_caducidad: String,
-    val tipo_almacenamiento: String,
+    val fechaCaducidad: String,
+    val tipoAlmacenamiento: String,
     val disponible: Boolean,
-    val guardadoEn: String
+    val guardadoEn: String,
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -46,7 +47,7 @@ data class ProductoLocal(
 
 object ProductosService {
 
-    private val BASE_URL = "http://10.0.2.2:8080"
+    private const val BASE_URL = "http://10.0.2.2:8080"
 
     private val client = HttpClient(Android) {
         install(ContentNegotiation) {
@@ -75,7 +76,7 @@ class ProductosRepository {
         private val _productosGuardados = mutableListOf<ProductoLocal>()
     }
 
-    suspend fun guardarProductos(productos: List<Producto>) {
+    fun guardarProductos(productos: List<Producto>) {
         _productosGuardados.clear()
         val hora = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
             .format(java.util.Date())
@@ -83,10 +84,10 @@ class ProductosRepository {
             _productosGuardados.add(
                 ProductoLocal(
                     id                  = p.id,
-                    nombre_producto     = p.nombre_producto,
+                    nombreProducto      = p.nombreProducto,
                     cantidad            = p.cantidad,
-                    fecha_caducidad     = p.fecha_caducidad,
-                    tipo_almacenamiento = p.tipo_almacenamiento,
+                    fechaCaducidad      = p.fechaCaducidad,
+                    tipoAlmacenamiento  = p.tipoAlmacenamiento,
                     disponible          = p.disponible,
                     guardadoEn          = hora
                 )
@@ -94,5 +95,5 @@ class ProductosRepository {
         }
     }
 
-    suspend fun obtenerProductosLocales(): List<ProductoLocal> = _productosGuardados.toList()
+    fun obtenerProductosLocales(): List<ProductoLocal> = _productosGuardados.toList()
 }

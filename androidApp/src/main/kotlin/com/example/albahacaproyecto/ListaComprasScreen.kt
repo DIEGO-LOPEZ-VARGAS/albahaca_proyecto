@@ -1,6 +1,5 @@
 package com.example.albahacaproyecto
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,7 +23,7 @@ data class ItemCompra(
     val nombre: String,
     val cantidad: Int,
     val tipo: String,
-    var comprado: Boolean = false
+    var comprado: Boolean = false,
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -38,7 +37,7 @@ object ComprasRepository {
     fun agregarDesdeBackend(productos: List<ProductoLocal>) {
         productos.forEach { p ->
             if (_items.none { it.id == p.id }) {
-                _items.add(ItemCompra(p.id, p.nombre_producto, p.cantidad.coerceAtLeast(1), p.tipo_almacenamiento))
+                _items.add(ItemCompra(p.id, p.nombreProducto, p.cantidad.coerceAtLeast(1), p.tipoAlmacenamiento))
             }
         }
     }
@@ -75,7 +74,7 @@ fun ListaComprasScreen() {
     val amarilloTexto       = Color(0xFF92400E)
     val verdeComprado       = Color(0xFFE8F5E9)
 
-    var isLoading        by remember { mutableStateOf(false) }
+    var isLoading        by remember { mutableStateOf(value = false) }
     var mensajeError     by remember { mutableStateOf<String?>(null) }
     var mensajeExito     by remember { mutableStateOf<String?>(null) }
     var filtro           by remember { mutableStateOf("todos") } // todos, pendientes, comprados
@@ -233,9 +232,9 @@ fun ListaComprasScreen() {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    TarjetaEstadistica("📋 Total", "${todosLosItems.size}", Color(0xFFE3F2FD), Color(0xFF1565C0), Modifier.weight(1f))
-                    TarjetaEstadistica("⏳ Pendientes", "${todosLosItems.count { !it.comprado }}", amarilloFondo, amarilloTexto, Modifier.weight(1f))
-                    TarjetaEstadistica("✅ Comprados", "${todosLosItems.count { it.comprado }}", verdeComprado, verdePrincipal, Modifier.weight(1f))
+                    TarjetaEstadistica("📋 Total", todosLosItems.size.toString(), Color(0xFFE3F2FD), Color(0xFF1565C0), Modifier.weight(1f))
+                    TarjetaEstadistica("⏳ Pendientes", todosLosItems.count { !it.comprado }.toString(), amarilloFondo, amarilloTexto, Modifier.weight(1f))
+                    TarjetaEstadistica("✅ Comprados", todosLosItems.count { it.comprado }.toString(), verdeComprado, verdePrincipal, Modifier.weight(1f))
                 }
             }
 
