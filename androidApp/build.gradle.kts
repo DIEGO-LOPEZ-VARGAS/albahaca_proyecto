@@ -56,4 +56,10 @@ dependencies {
     implementation("io.ktor:ktor-client-android:2.3.11")
     implementation("io.ktor:ktor-client-content-negotiation:2.3.11")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.11")
+
+    // Biometría (Huella y Rostro)
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
+
+    // 🔥 UBICACIÓN Y GPS DE GOOGLE
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 }

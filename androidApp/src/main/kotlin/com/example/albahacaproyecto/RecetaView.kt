@@ -69,7 +69,7 @@ class RecetaApiClient {
     }
 }
 
-// Almacenamiento Local Simple (Requisito de Examen)
+// Almacenamiento Local Simple
 object RecetaStorage {
     var ultimaRecetaGuardada: Receta? = null
 }

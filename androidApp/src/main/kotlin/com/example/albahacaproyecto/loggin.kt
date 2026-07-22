@@ -64,9 +64,12 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
     var contrasena by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var passwordVisible by remember { mutableStateOf(false) }
-    
+
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+
+    // Inicialización del ayudante biométrico
+    val biometricHelper = remember { AndroidBiometricHelper(context) }
 
     Box(
         modifier = Modifier
@@ -203,12 +206,18 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
                         onClick = {
                             coroutineScope.launch {
                                 isLoading = true
-                                val codigo = KtorClient.enviarLogin(usuario, contrasena)
-                                when (codigo) {
-                                    200 -> onLoginExitoso()
-                                    401 -> Toast.makeText(context, "Credenciales inválidas", Toast.LENGTH_SHORT).show()
-                                    else -> Toast.makeText(context, "Error: $codigo", Toast.LENGTH_SHORT).show()
+
+                                // Llamamos a RailwayKtorService pasando el contexto de Android
+                                val loginExitoso = RailwayKtorService.loginUsuario(context, usuario, contrasena)
+
+                                if (loginExitoso) {
+                                    // Cambia de pantalla (Ejecuta la lambda de éxito)
+                                    onLoginExitoso()
+                                } else {
+                                    // Si regresa falso, asumimos credenciales incorrectas o error en el servidor
+                                    Toast.makeText(context, "Credenciales inválidas", Toast.LENGTH_SHORT).show()
                                 }
+
                                 isLoading = false
                             }
                         },
@@ -230,7 +239,33 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
                         }
                     }
 
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(16.dp))
+
+                    // 🔥 BOTÓN DEL SENSOR BIOMÉTRICO (HUELLA DIGITAL)
+                    IconButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                val exito = biometricHelper.lanzarLectorHuella()
+                                if (exito) {
+                                    Toast.makeText(context, "¡Acceso biométrico concedido!", Toast.LENGTH_SHORT).show()
+                                    onLoginExitoso()
+                                } else {
+                                    Toast.makeText(context, "Autenticación fallida", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        },
+                        modifier = Modifier.size(56.dp),
+                        enabled = !isLoading
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Fingerprint,
+                            contentDescription = "Acceso biométrico",
+                            tint = VerduritasPrimary,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+
+                    Spacer(Modifier.height(16.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -265,9 +300,9 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
                     }
                 }
             }
-            
+
             Spacer(Modifier.height(40.dp))
-            
+
             // Footer
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -292,7 +327,7 @@ fun RegisterContent(onBackToLogin: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
-    
+
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
