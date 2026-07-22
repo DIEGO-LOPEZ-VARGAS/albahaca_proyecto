@@ -99,6 +99,11 @@ fun MainMenuScreen() {
                             }
                         }
 
+                        // 🔥 CUADRO DE UBICACIÓN Y GEOLOCALIZACIÓN
+                        item {
+                            UbicacionWidget()
+                        }
+
                         // Bento Grid
                         item {
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -160,7 +165,7 @@ fun MainMenuScreen() {
                                     Box {
                                         // Placeholder for image
                                         Box(modifier = Modifier.fillMaxSize().background(Color.Gray))
-                                        
+
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxSize()
