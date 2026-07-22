@@ -23,6 +23,18 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -75,8 +87,30 @@ fun RecetaView() {
 
     val scope = rememberCoroutineScope()
     val api = remember { RecetaApiClient() }
+    val context = LocalContext.current
 
+    // Launcher para solicitar permiso de notificaciones (Android 13+)
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            android.util.Log.d("NOTIFICACION", "Permiso concedido")
+        } else {
+            android.util.Log.d("NOTIFICACION", "Permiso denegado")
+        }
+    }
+
+    // TÉCNICA: Procesos de Notificaciones (Inicialización del Canal y Permisos)
     LaunchedEffect(Unit) {
+        crearCanalNotificaciones(context)
+        
+        // Solicitar permiso en Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
         historialRecetas = api.obtenerRecetas()
     }
 
@@ -134,10 +168,14 @@ fun RecetaView() {
                 )
                 Button(
                     onClick = {
+                        val nombreReceta = titulo // Guardamos para la notificación
                         val nueva = Receta(titulo, ingredientes, pasos)
                         scope.launch {
                             val exito = api.enviarReceta(nueva)
                             if (exito) {
+                                // TÉCNICA: Procesos de Notificaciones (Disparo del aviso)
+                                enviarNotificacionExito(context, nombreReceta)
+                                
                                 historialRecetas = api.obtenerRecetas()
                                 titulo = ""; ingredientes = ""; pasos = ""
                             }
@@ -188,6 +226,51 @@ fun RecetaView() {
         }
 
         item { Spacer(Modifier.height(32.dp)) }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROCESO DE NOTIFICACIONES (REQUISITO DE PRÁCTICA)
+// ─────────────────────────────────────────────────────────────────────────────
+
+private const val CHANNEL_ID = "albahaca_recetas"
+
+/**
+ * Crea el canal de notificaciones necesario para Android 8.0+
+ */
+private fun crearCanalNotificaciones(context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val name = "Canal de Recetas"
+        val descriptionText = "Avisos de creación de recetas"
+        val importance = NotificationManager.IMPORTANCE_DEFAULT
+        val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+            description = descriptionText
+        }
+        val notificationManager: NotificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
+    }
+}
+
+/**
+ * Lanza la notificación local al usuario
+ */
+private fun enviarNotificacionExito(context: Context, tituloReceta: String) {
+    android.util.Log.d("NOTIFICACION", "Intentando enviar notificación para: $tituloReceta")
+    val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        .setSmallIcon(android.R.drawable.ic_menu_save)
+        .setContentTitle("¡Receta Guardada!")
+        .setContentText("Tu receta '$tituloReceta' ya está en Railway.")
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .setAutoCancel(true)
+
+    try {
+        with(NotificationManagerCompat.from(context)) {
+            notify(System.currentTimeMillis().toInt(), builder.build())
+            android.util.Log.d("NOTIFICACION", "Notificación enviada con éxito")
+        }
+    } catch (e: Exception) {
+        android.util.Log.e("NOTIFICACION", "Error al enviar notificación: ${e.message}")
     }
 }
 
