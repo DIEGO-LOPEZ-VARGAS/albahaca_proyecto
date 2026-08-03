@@ -57,10 +57,12 @@ object RailwayKtorService {
             // Si el servidor backend responde que el usuario es válido (HTTP 200 OK)
             if (response.status == HttpStatusCode.OK) {
 
-                // Guardamos el token recibido en el KtorClient para no romper tus otras pantallas (como Actividades)
+                // Guardamos el token y el nombre recibidos en el KtorClient
                 val loginData = response.body<LoginResponse>()
                 KtorClient.sessionToken = loginData.token
-                Log.d("DEPURACION_ALBAHACA", "TOKEN GUARDADO EN HISTORIAL: ${KtorClient.sessionToken}")
+                KtorClient.userName = loginData.nombre
+                Log.d("DEPURACION_ALBAHACA", "TOKEN GUARDADO: ${KtorClient.sessionToken}")
+                Log.d("DEPURACION_ALBAHACA", "NOMBRE GUARDADO: ${KtorClient.userName}")
 
                 // 🔥 DISPARAMOS LA NOTIFICACIÓN NATIVA DESDE AQUÍ
                 mostrarNotificacionNativa(context)
@@ -103,7 +105,14 @@ object RailwayKtorService {
                 .setAutoCancel(true)
 
         // Mostrarla en el celular
-        notificationManager.notify(2002, builder.build())
+        try {
+            notificationManager.notify(2002, builder.build())
+            Log.d("DEPURACION_ALBAHACA", "Notificación de login mostrada")
+        } catch (e: SecurityException) {
+            Log.e("DEPURACION_ALBAHACA", "Sin permiso para mostrar notificación de login: ${e.message}")
+        } catch (e: Exception) {
+            Log.e("DEPURACION_ALBAHACA", "Error al mostrar notificación de login: ${e.message}")
+        }
     }
 
     /**

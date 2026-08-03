@@ -67,6 +67,8 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    
+    val sessionManager = remember { SessionManager(context) }
 
     // Inicialización del ayudante biométrico
     val biometricHelper = remember { AndroidBiometricHelper(context) }
@@ -211,6 +213,8 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
                                 val loginExitoso = RailwayKtorService.loginUsuario(context, usuario, contrasena)
 
                                 if (loginExitoso) {
+                                    // Guardar la sesión de forma persistente (Token y Nombre)
+                                    sessionManager.saveSession(KtorClient.sessionToken, KtorClient.userName)
                                     // Cambia de pantalla (Ejecuta la lambda de éxito)
                                     onLoginExitoso()
                                 } else {
@@ -244,6 +248,10 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
                     // 🔥 BOTÓN DEL SENSOR BIOMÉTRICO (HUELLA DIGITAL)
                     IconButton(
                         onClick = {
+                            if (KtorClient.sessionToken == null) {
+                                Toast.makeText(context, "Inicia sesión con contraseña primero para habilitar la huella", Toast.LENGTH_LONG).show()
+                                return@IconButton
+                            }
                             coroutineScope.launch {
                                 val exito = biometricHelper.lanzarLectorHuella()
                                 if (exito) {

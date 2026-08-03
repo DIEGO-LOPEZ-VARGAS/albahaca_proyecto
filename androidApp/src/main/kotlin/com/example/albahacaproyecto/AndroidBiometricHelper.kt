@@ -10,7 +10,7 @@ import kotlin.coroutines.resume
 
 class AndroidBiometricHelper(private val context: Context) {
 
-    // 🔥 Nombre restaurado a lanzarLectorHuella para que coincida con tu loggin.kt
+    //  Nombre restaurado a lanzarLectorHuella para que coincida con tu loggin.kt
     suspend fun lanzarLectorHuella(): Boolean = suspendCancellableCoroutine { continuation ->
         val biometricManager = BiometricManager.from(context)
 

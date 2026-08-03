@@ -5,6 +5,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -13,6 +14,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -28,15 +30,38 @@ data class LoginRequest(
 
 @Serializable
 data class Fruta(
+    val id: Int = 0,
+    val localId: Int = 0, // 🔥 Para control interno de Room
     val nombre: String,
-    val cantidad: Int
+    val cantidad: Int,
+    @SerialName("fecha_caducidad") val fechaCaducidad: String = "",
+    @SerialName("lugar_almacenamiento") val lugarAlmacenamiento: String = "Refri"
 )
 
 @Serializable
 data class Receta(
+    val id: Int = 0,
+    val localId: Int = 0, // 🔥 Para control interno de Room
     val titulo: String,
     val ingredientes: String,
     val pasos: String
+)
+
+@Serializable
+data class Producto(
+    val id: Int,
+    @SerialName("nombre_producto") val nombreProducto: String,
+    val cantidad: Int,
+    @SerialName("fecha_caducidad") val fechaCaducidad: String = "",
+    @SerialName("tipo_almacenamiento") val tipoAlmacenamiento: String = "",
+    val disponible: Boolean = true,
+)
+
+@Serializable
+data class ProductosResponse(
+    val rama: String = "",
+    val total: Int = 0,
+    val productos: List<Producto>,
 )
 
 @Serializable
@@ -79,6 +104,20 @@ data class LoginResponse(
     val nombre: String? = null
 )
 
+@Serializable
+data class IngredientsRequest(
+    val ingredientes: List<String>
+)
+
+@Serializable
+data class NutricionResponse(
+    val calorias: String = "",
+    val proteinas: String = "",
+    val grasas: String = "",
+    val carbos: String = "",
+    val consejo: String = ""
+)
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CLIENTE CENTRAL
 // ─────────────────────────────────────────────────────────────────────────────
@@ -88,6 +127,20 @@ object KtorClient {
     
     // Variable para guardar el token de sesión
     var sessionToken: String? = null
+        set(value) {
+            field = value
+            Log.d("DEPURACION_ALBAHACA", "sessionToken actualizado: ${if (value != null) "TOKEN_PRESENTE" else "NULL"}")
+        }
+
+    // Variable para guardar el nombre del usuario
+    var userName: String? = null
+        set(value) {
+            field = value
+            Log.d("DEPURACION_ALBAHACA", "userName actualizado: $value")
+        }
+
+    // Callback para manejar la expiración de sesión de forma global
+    var onSessionExpired: (() -> Unit)? = null
 
     val client = HttpClient(Android) {
         install(ContentNegotiation) {
@@ -95,6 +148,11 @@ object KtorClient {
                 ignoreUnknownKeys = true
                 encodeDefaults = true
             })
+        }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 60000 // Esperar hasta 60s por la IA
+            connectTimeoutMillis = 60000
+            socketTimeoutMillis = 60000
         }
     }
     
@@ -109,7 +167,9 @@ object KtorClient {
             if (response.status.value == 200) {
                 val loginData = response.body<LoginResponse>()
                 sessionToken = loginData.token
+                userName = loginData.nombre
                 Log.d("DEPURACION_ALBAHACA", "TOKEN RECIBIDO: $sessionToken")
+                Log.d("DEPURACION_ALBAHACA", "NOMBRE RECIBIDO: $userName")
             }
             
             Log.d("DEPURACION_ALBAHACA", "RESPUESTA RECIBIDA: Status Code = ${response.status.value}")

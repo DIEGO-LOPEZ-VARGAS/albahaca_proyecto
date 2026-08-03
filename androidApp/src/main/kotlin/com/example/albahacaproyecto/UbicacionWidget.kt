@@ -36,18 +36,25 @@ fun UbicacionWidget() {
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
-    var tienePermiso by remember {
+    var tienePermisoPreciso by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED ||
-                    ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    ) == PackageManager.PERMISSION_GRANTED
+            ) == PackageManager.PERMISSION_GRANTED
         )
     }
+
+    var tienePermisoAproximado by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val tienePermiso = tienePermisoPreciso || tienePermisoAproximado
 
     var direccionTexto by remember { mutableStateOf("Presiona el botón para obtener tu ubicación") }
     var cargandoUbicacion by remember { mutableStateOf(false) }
@@ -55,12 +62,12 @@ fun UbicacionWidget() {
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val concedido = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        tienePermiso = concedido
-        if (concedido) {
+        tienePermisoPreciso = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        tienePermisoAproximado = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        
+        if (tienePermisoPreciso || tienePermisoAproximado) {
             cargandoUbicacion = true
-            obtenerMunicipioEstadoCP(context, fusedLocationClient) { resultado ->
+            obtenerMunicipioEstadoCP(context, fusedLocationClient, tienePermisoPreciso) { resultado ->
                 direccionTexto = resultado
                 cargandoUbicacion = false
             }
@@ -127,8 +134,8 @@ fun UbicacionWidget() {
             Button(
                 onClick = {
                     cargandoUbicacion = true
-                    if (tienePermiso) {
-                        obtenerMunicipioEstadoCP(context, fusedLocationClient) { resultado ->
+                    if (tienePermisoPreciso || tienePermisoAproximado) {
+                        obtenerMunicipioEstadoCP(context, fusedLocationClient, tienePermisoPreciso) { resultado ->
                             direccionTexto = resultado
                             cargandoUbicacion = false
                         }
@@ -162,25 +169,37 @@ fun UbicacionWidget() {
 private fun obtenerMunicipioEstadoCP(
     context: Context,
     fusedClient: com.google.android.gms.location.FusedLocationProviderClient,
+    usaAltaPrecision: Boolean,
     onResultado: (String) -> Unit
 ) {
-    fusedClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, CancellationTokenSource().token)
-        .addOnSuccessListener { location ->
-            if (location != null) {
-                convertirAMunicipioEstadoCP(context, location.latitude, location.longitude, onResultado)
-            } else {
-                fusedClient.lastLocation.addOnSuccessListener { lastLoc ->
-                    if (lastLoc != null) {
-                        convertirAMunicipioEstadoCP(context, lastLoc.latitude, lastLoc.longitude, onResultado)
-                    } else {
-                        onResultado("Verifica tener activada la 'Ubicación / GPS'")
+    val prioridad = if (usaAltaPrecision) Priority.PRIORITY_HIGH_ACCURACY else Priority.PRIORITY_BALANCED_POWER_ACCURACY
+    
+    try {
+        fusedClient.getCurrentLocation(prioridad, CancellationTokenSource().token)
+            .addOnSuccessListener { location ->
+                if (location != null) {
+                    convertirAMunicipioEstadoCP(context, location.latitude, location.longitude, onResultado)
+                } else {
+                    fusedClient.lastLocation.addOnSuccessListener { lastLoc ->
+                        if (lastLoc != null) {
+                            convertirAMunicipioEstadoCP(context, lastLoc.latitude, lastLoc.longitude, onResultado)
+                        } else {
+                            onResultado("Verifica tener activada la 'Ubicación / GPS'")
+                        }
                     }
                 }
             }
-        }
-        .addOnFailureListener {
-            onResultado("Error con el sensor GPS")
-        }
+            .addOnFailureListener { e ->
+                android.util.Log.e("DEPURACION_ALBAHACA", "Error al obtener ubicación: ${e.message}")
+                onResultado("Error con el sensor GPS")
+            }
+    } catch (e: SecurityException) {
+        android.util.Log.e("DEPURACION_ALBAHACA", "Error de permisos: ${e.message}")
+        onResultado("Error: Faltan permisos de ubicación")
+    } catch (e: Exception) {
+        android.util.Log.e("DEPURACION_ALBAHACA", "Error inesperado en GPS: ${e.message}")
+        onResultado("Error al obtener ubicación")
+    }
 }
 
 private fun convertirAMunicipioEstadoCP(
@@ -206,12 +225,23 @@ private fun convertirAMunicipioEstadoCP(
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            geocoder.getFromLocation(lat, lon, 1) { list ->
-                if (list.isNotEmpty()) {
-                    onResultado(formatearResultado(list[0]))
-                } else {
-                    onResultado("Lat: $lat\nLon: $lon")
-                }
+            try {
+                geocoder.getFromLocation(lat, lon, 1, object : Geocoder.GeocodeListener {
+                    override fun onGeocode(list: List<android.location.Address>) {
+                        if (list.isNotEmpty()) {
+                            onResultado(formatearResultado(list[0]))
+                        } else {
+                            onResultado("Lat: $lat\nLon: $lon")
+                        }
+                    }
+                    override fun onError(errorMessage: String?) {
+                        android.util.Log.e("DEPURACION_ALBAHACA", "Error Geocoder: $errorMessage")
+                        onResultado("Lat: $lat\nLon: $lon")
+                    }
+                })
+            } catch (e: Exception) {
+                android.util.Log.e("DEPURACION_ALBAHACA", "Falla al llamar Geocoder: ${e.message}")
+                onResultado("Lat: $lat\nLon: $lon")
             }
         } else {
             @Suppress("DEPRECATION")

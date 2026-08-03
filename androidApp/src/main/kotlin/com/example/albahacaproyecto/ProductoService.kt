@@ -1,36 +1,12 @@
 package com.example.albahacaproyecto
 
-import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.engine.android.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.HttpHeaders
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MODELOS
 // ─────────────────────────────────────────────────────────────────────────────
-
-@Serializable
-data class Producto(
-    val id: Int,
-    @SerialName("nombre_producto") val nombreProducto: String,
-    val cantidad: Int,
-    @SerialName("fecha_caducidad") val fechaCaducidad: String,
-    @SerialName("tipo_almacenamiento") val tipoAlmacenamiento: String,
-    val disponible: Boolean,
-)
-
-@Serializable
-data class ProductosResponse(
-    val rama: String,
-    val total: Int,
-    val productos: List<Producto>,
-)
 
 data class ProductoLocal(
     val id: Int,
@@ -49,12 +25,7 @@ data class ProductoLocal(
 object ProductosService {
 
     private const val BASE_URL = KtorClient.BASE_URL
-
-    private val client = HttpClient(Android) {
-        install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true })
-        }
-    }
+    private val client = KtorClient.client
 
     /** GET /api/compras */
     suspend fun obtenerProductos(): ProductosResponse {
