@@ -4,14 +4,19 @@ import android.content.Context
 import com.example.albahacaproyecto.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import io.ktor.client.request.*
+import io.ktor.http.*
 
 class OfflineRepository(context: Context) {
     private val db = AppDatabase.getDatabase(context)
     private val recetaDao = db.recetaDao()
     private val frutaDao = db.frutaDao()
+    private val compraDao = db.compraDao()
+    private val productoRama2Dao = db.productoRama2Dao()
     
     private val recetaApi = RecetaApiClient()
     private val frutaApi = FrutaApiClient()
+    private val productosApi = ProductosService
 
     private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -20,34 +25,32 @@ class OfflineRepository(context: Context) {
         repositoryScope.launch {
             try {
                 recetaApi.obtenerRecetas().onSuccess { cloudList ->
-                    recetaDao.clearSynchronized()
                     cloudList.forEach { r ->
-                        recetaDao.insertReceta(RecetaEntity(
+                        val existing = recetaDao.getByRemoteId(r.id)
+                        val entity = RecetaEntity(
+                            localId = existing?.localId ?: 0,
                             remoteId = r.id,
                             titulo = r.titulo,
                             ingredientes = r.ingredientes,
                             pasos = r.pasos,
                             sincronizado = true
-                        ))
+                        )
+                        recetaDao.insertReceta(entity)
                     }
                 }
             } catch (e: Exception) { }
         }
         
-        return recetaDao.getAllRecetasFlow().map { list ->
-            list.map { Receta(it.remoteId, it.localId, it.titulo, it.ingredientes, it.pasos) }
-        }
-    }
-
-    suspend fun getRecetas(): List<Receta> {
-        return recetaDao.getAllRecetas().map { 
-            Receta(it.remoteId, it.localId, it.titulo, it.ingredientes, it.pasos)
+        return recetaDao.getAllRecetasFlow().map { entities ->
+            entities.map { it.toDomain() }
         }
     }
 
     suspend fun guardarReceta(r: Receta): Result<Boolean> {
         val res = recetaApi.enviarReceta(r)
         val entity = RecetaEntity(
+            localId = r.localId,
+            remoteId = r.id,
             titulo = r.titulo,
             ingredientes = r.ingredientes,
             pasos = r.pasos,
@@ -64,14 +67,15 @@ class OfflineRepository(context: Context) {
 
     suspend fun actualizarReceta(r: Receta): Result<Boolean> {
         val res = recetaApi.actualizarReceta(r.id, r)
-        recetaDao.insertReceta(RecetaEntity(
+        val entity = RecetaEntity(
             localId = r.localId,
             remoteId = r.id,
             titulo = r.titulo,
             ingredientes = r.ingredientes,
             pasos = r.pasos,
             sincronizado = res.isSuccess
-        ))
+        )
+        recetaDao.insertReceta(entity)
         return res
     }
 
@@ -80,40 +84,44 @@ class OfflineRepository(context: Context) {
         repositoryScope.launch {
             try {
                 frutaApi.obtenerFrutas().onSuccess { cloudList ->
-                    frutaDao.clearSynchronized()
                     cloudList.forEach { f ->
-                        frutaDao.insertFruta(FrutaEntity(
+                        val existing = frutaDao.getByRemoteId(f.id)
+                        val entity = FrutaEntity(
+                            localId = existing?.localId ?: 0,
                             remoteId = f.id,
                             nombre = f.nombre,
                             cantidad = f.cantidad,
                             fechaCaducidad = f.fechaCaducidad,
                             lugarAlmacenamiento = f.lugarAlmacenamiento,
                             sincronizado = true
-                        ))
+                        )
+                        frutaDao.insertFruta(entity)
                     }
                 }
             } catch (e: Exception) { }
         }
-        return frutaDao.getAllFrutasFlow().map { list ->
-            list.map { Fruta(it.remoteId, it.localId, it.nombre, it.cantidad, it.fechaCaducidad, it.lugarAlmacenamiento) }
+        
+        return frutaDao.getAllFrutasFlow().map { entities ->
+            entities.map { it.toDomain() }
         }
     }
 
     suspend fun getFrutas(): List<Fruta> {
-        return frutaDao.getAllFrutas().map {
-            Fruta(it.remoteId, it.localId, it.nombre, it.cantidad, it.fechaCaducidad, it.lugarAlmacenamiento)
-        }
+        return frutaDao.getAllFrutas().map { it.toDomain() }
     }
 
     suspend fun guardarFruta(f: Fruta): Result<Boolean> {
         val res = frutaApi.enviarFruta(f)
-        frutaDao.insertFruta(FrutaEntity(
+        val entity = FrutaEntity(
+            localId = f.localId,
+            remoteId = f.id,
             nombre = f.nombre,
             cantidad = f.cantidad,
             fechaCaducidad = f.fechaCaducidad,
             lugarAlmacenamiento = f.lugarAlmacenamiento,
             sincronizado = res.isSuccess
-        ))
+        )
+        frutaDao.insertFruta(entity)
         return res
     }
 
@@ -124,7 +132,7 @@ class OfflineRepository(context: Context) {
 
     suspend fun actualizarFruta(f: Fruta): Result<Boolean> {
         val res = frutaApi.actualizarFruta(f.id, f)
-        frutaDao.insertFruta(FrutaEntity(
+        val entity = FrutaEntity(
             localId = f.localId,
             remoteId = f.id,
             nombre = f.nombre,
@@ -132,7 +140,110 @@ class OfflineRepository(context: Context) {
             fechaCaducidad = f.fechaCaducidad,
             lugarAlmacenamiento = f.lugarAlmacenamiento,
             sincronizado = res.isSuccess
+        )
+        frutaDao.insertFruta(entity)
+        return res
+    }
+
+    // --- COMPRAS ---
+    fun getComprasFlow(): Flow<List<Fruta>> {
+        repositoryScope.launch {
+            try {
+                val res = productosApi.obtenerCompras()
+                res.productos.forEach { p ->
+                    val existing = compraDao.getByRemoteId(p.id)
+                    compraDao.insertCompra(CompraEntity(
+                        localId = existing?.localId ?: 0,
+                        remoteId = p.id,
+                        nombreProducto = p.nombreProducto,
+                        cantidad = p.cantidad,
+                        fechaCaducidad = p.fechaCaducidad,
+                        tipoAlmacenamiento = p.tipoAlmacenamiento,
+                        comprado = !p.disponible,
+                        sincronizado = true
+                    ))
+                }
+            } catch (e: Exception) { }
+        }
+        return compraDao.getAllComprasFlow().map { entities ->
+            entities.map { Fruta(it.remoteId, it.localId, it.nombreProducto, it.cantidad, it.fechaCaducidad, it.tipoAlmacenamiento) }
+        }
+    }
+
+    suspend fun guardarCompra(f: Fruta): Result<Boolean> {
+        val p = Producto(
+            id = f.id,
+            nombreProducto = f.nombre,
+            cantidad = f.cantidad,
+            disponible = true,
+            fechaCaducidad = f.fechaCaducidad,
+            tipoAlmacenamiento = f.lugarAlmacenamiento
+        )
+        val res = try {
+            val response = KtorClient.client.post("${KtorClient.BASE_URL}/api/compras") {
+                contentType(ContentType.Application.Json)
+                KtorClient.sessionToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                setBody(p)
+            }
+            Result.success(response.status.value in 200..299)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+
+        compraDao.insertCompra(CompraEntity(
+            localId = f.localId,
+            remoteId = f.id,
+            nombreProducto = f.nombre,
+            cantidad = f.cantidad,
+            fechaCaducidad = f.fechaCaducidad,
+            tipoAlmacenamiento = f.lugarAlmacenamiento,
+            sincronizado = res.isSuccess
         ))
         return res
     }
+
+    suspend fun eliminarCompra(localId: Int, remoteId: Int): Result<Boolean> {
+        compraDao.deleteById(localId)
+        return if (remoteId != 0) {
+            try {
+                val response = KtorClient.client.delete("${KtorClient.BASE_URL}/api/compras/$remoteId") {
+                    KtorClient.sessionToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+                }
+                Result.success(response.status.value in 200..299)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        } else Result.success(true)
+    }
+
+    // --- RAMA 2 ---
+    fun getProductosRama2Flow(): Flow<List<ProductoLocal>> {
+        repositoryScope.launch {
+            try {
+                val res = productosApi.obtenerProductos()
+                res.productos.forEach { p ->
+                    val existing = productoRama2Dao.getByRemoteId(p.id)
+                    productoRama2Dao.insert(ProductoRama2Entity(
+                        localId = existing?.localId ?: 0,
+                        remoteId = p.id,
+                        nombreProducto = p.nombreProducto,
+                        cantidad = p.cantidad,
+                        fechaCaducidad = p.fechaCaducidad,
+                        tipoAlmacenamiento = p.tipoAlmacenamiento,
+                        disponible = p.disponible,
+                        sincronizado = true
+                    ))
+                }
+            } catch (e: Exception) { }
+        }
+        return productoRama2Dao.getAllFlow().map { entities ->
+            entities.map { 
+                ProductoLocal(it.remoteId, it.nombreProducto, it.cantidad, it.fechaCaducidad, it.tipoAlmacenamiento, it.disponible, it.guardadoEn) 
+            }
+        }
+    }
 }
+
+// Extensiones para mapeo
+fun RecetaEntity.toDomain() = Receta(remoteId, localId, titulo, ingredientes, pasos)
+fun FrutaEntity.toDomain() = Fruta(remoteId, localId, nombre, cantidad, fechaCaducidad, lugarAlmacenamiento)

@@ -23,3 +23,28 @@ data class FrutaEntity(
     val lugarAlmacenamiento: String = "",
     val sincronizado: Boolean = true
 )
+
+@Entity(tableName = "compras_locales")
+data class CompraEntity(
+    @PrimaryKey(autoGenerate = true) var localId: Int = 0,
+    val remoteId: Int = 0,
+    val nombreProducto: String = "",
+    val cantidad: Int = 0,
+    val fechaCaducidad: String = "",
+    val tipoAlmacenamiento: String = "Despensa",
+    val comprado: Boolean = false,
+    val sincronizado: Boolean = true
+)
+
+@Entity(tableName = "productos_rama2_locales")
+data class ProductoRama2Entity(
+    @PrimaryKey(autoGenerate = true) var localId: Int = 0,
+    val remoteId: Int = 0,
+    val nombreProducto: String = "",
+    val cantidad: Int = 0,
+    val fechaCaducidad: String = "",
+    val tipoAlmacenamiento: String = "",
+    val disponible: Boolean = true,
+    val guardadoEn: String = "",
+    val sincronizado: Boolean = true
+)

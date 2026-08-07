@@ -16,6 +16,7 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -31,7 +32,7 @@ data class LoginRequest(
 @Serializable
 data class Fruta(
     val id: Int = 0,
-    val localId: Int = 0, // 🔥 Para control interno de Room
+    @Transient val localId: Int = 0, // 🔥 Solo para control interno de Room
     val nombre: String,
     val cantidad: Int,
     @SerialName("fecha_caducidad") val fechaCaducidad: String = "",
@@ -41,7 +42,7 @@ data class Fruta(
 @Serializable
 data class Receta(
     val id: Int = 0,
-    val localId: Int = 0, // 🔥 Para control interno de Room
+    @Transient val localId: Int = 0, // 🔥 Solo para control interno de Room
     val titulo: String,
     val ingredientes: String,
     val pasos: String

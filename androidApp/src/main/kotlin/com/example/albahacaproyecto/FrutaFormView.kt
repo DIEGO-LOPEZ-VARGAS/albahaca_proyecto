@@ -329,7 +329,13 @@ fun FrutaFormView() {
                 lugar = fruta.lugarAlmacenamiento,
                 onDelete = {
                     coroutineScope.launch {
-                        offlineRepo.eliminarFruta(fruta.localId, fruta.id)
+                        android.widget.Toast.makeText(context, "Eliminando...", android.widget.Toast.LENGTH_SHORT).show()
+                        val res = offlineRepo.eliminarFruta(fruta.localId, fruta.id)
+                        res.onSuccess {
+                            android.widget.Toast.makeText(context, "Eliminado con éxito", android.widget.Toast.LENGTH_SHORT).show()
+                        }.onFailure {
+                            android.widget.Toast.makeText(context, "Error al eliminar: ${it.message}", android.widget.Toast.LENGTH_SHORT).show()
+                        }
                     }
                 },
                 onEdit = { frutaAEditar = fruta }

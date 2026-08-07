@@ -9,57 +9,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MODELO LOCAL
-// ─────────────────────────────────────────────────────────────────────────────
-
-data class ItemCompra(
-    val id: Int,
-    val nombre: String,
-    val cantidad: Int,
-    val tipo: String,
-    var comprado: Boolean = false,
-)
-
-// ─────────────────────────────────────────────────────────────────────────────
-// REPOSITORIO LOCAL DE COMPRAS
-// ─────────────────────────────────────────────────────────────────────────────
-
-object ComprasRepository {
-    private val _items = mutableStateListOf<ItemCompra>()
-    val items: List<ItemCompra> get() = _items
-
-    fun agregarDesdeBackend(productos: List<ProductoLocal>) {
-        productos.forEach { p ->
-            if (_items.none { it.id == p.id }) {
-                _items.add(ItemCompra(p.id, p.nombreProducto, p.cantidad.coerceAtLeast(1), p.tipoAlmacenamiento))
-            }
-        }
-    }
-
-    fun agregarManual(nombre: String, cantidad: Int, tipo: String) {
-        val nuevoId = (_items.maxOfOrNull { it.id } ?: 0) + 1
-        _items.add(ItemCompra(nuevoId, nombre, cantidad, tipo))
-    }
-
-    fun marcarComprado(id: Int) {
-        val idx = _items.indexOfFirst { it.id == id }
-        if (idx >= 0) _items[idx] = _items[idx].copy(comprado = !_items[idx].comprado)
-    }
-
-    fun eliminar(id: Int) {
-        _items.removeAll { it.id == id }
-    }
-
-    fun limpiarComprados() {
-        _items.removeAll { it.comprado }
-    }
-}
+import kotlinx.coroutines.delay
+import com.example.albahacaproyecto.database.OfflineRepository
+import androidx.compose.ui.platform.LocalContext
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PANTALLA
@@ -74,8 +29,13 @@ fun ListaComprasScreen() {
     val amarilloTexto       = Color(0xFF92400E)
     val verdeComprado       = Color(0xFFE8F5E9)
 
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val offlineRepo = remember { OfflineRepository(context) }
+    
+    val todosLosItems by offlineRepo.getComprasFlow().collectAsState(initial = emptyList())
+
     var isLoading        by remember { mutableStateOf(value = false) }
-    var mensajeError     by remember { mutableStateOf<String?>(null) }
     var mensajeExito     by remember { mutableStateOf<String?>(null) }
     var filtro           by remember { mutableStateOf("todos") } // todos, pendientes, comprados
     var mostrarDialogo   by remember { mutableStateOf(false) }
@@ -83,14 +43,8 @@ fun ListaComprasScreen() {
     var nuevaCantidad    by remember { mutableStateOf("1") }
     var nuevoTipo        by remember { mutableStateOf("despensa") }
 
-    val scope      = rememberCoroutineScope()
-    val repository = remember { ProductosRepository() }
-    val todosLosItems = ComprasRepository.items
-
     val itemsFiltrados = when (filtro) {
-        "pendientes" -> todosLosItems.filter { !it.comprado }
-        "comprados"  -> todosLosItems.filter { it.comprado }
-        else         -> todosLosItems
+        else -> todosLosItems
     }
 
     // ── Diálogo agregar producto ──────────────────────────────────────────
@@ -108,7 +62,7 @@ fun ListaComprasScreen() {
                     )
                     OutlinedTextField(
                         value = nuevaCantidad,
-                        onValueChange = { nuevaCantidad = it.filter { c -> c.isDigit() } },
+                        onValueChange = { newValue -> if (newValue.all { it.isDigit() }) nuevaCantidad = newValue },
                         label = { Text("Cantidad") },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -131,14 +85,17 @@ fun ListaComprasScreen() {
                 Button(
                     onClick = {
                         if (nuevoNombre.isNotBlank()) {
-                            ComprasRepository.agregarManual(
-                                nuevoNombre.trim(),
-                                nuevaCantidad.toIntOrNull() ?: 1,
-                                nuevoTipo
-                            )
-                            nuevoNombre = ""
-                            nuevaCantidad = "1"
-                            mostrarDialogo = false
+                            scope.launch {
+                                val nueva = Fruta(
+                                    nombre = nuevoNombre.trim(),
+                                    cantidad = nuevaCantidad.toIntOrNull() ?: 1,
+                                    lugarAlmacenamiento = nuevoTipo
+                                )
+                                offlineRepo.guardarCompra(nueva)
+                                nuevoNombre = ""
+                                nuevaCantidad = "1"
+                                mostrarDialogo = false
+                            }
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = verdePrincipal)
@@ -186,27 +143,17 @@ fun ListaComprasScreen() {
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Sincronizar desde servidor", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("GET /api/rama2/compras", fontSize = 12.sp, color = grisTextoSecundario)
-                        mensajeError?.let { Text(it, fontSize = 11.sp, color = rojoAlertaTexto) }
+                        Text("Sincronización persistente Room", fontSize = 12.sp, color = grisTextoSecundario)
                         mensajeExito?.let { Text(it, fontSize = 11.sp, color = Color(0xFF4CAF50)) }
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(
                                 onClick = {
+                                    isLoading = true
                                     scope.launch {
-                                        isLoading = true
-                                        mensajeError = null
-                                        mensajeExito = null
-                                        try {
-                                            val respuesta = ProductosService.obtenerCompras()
-                                            repository.guardarProductos(respuesta.productos)
-                                            val locales = repository.obtenerProductosLocales()
-                                            ComprasRepository.agregarDesdeBackend(locales)
-                                            mensajeExito = "✅ ${respuesta.total} productos cargados"
-                                        } catch (e: Exception) {
-                                            mensajeError = "Sin conexión: ${e.message}"
-                                        }
+                                        delay(1000)
                                         isLoading = false
+                                        mensajeExito = "✅ Lista actualizada"
                                     }
                                 },
                                 enabled = !isLoading,
@@ -233,8 +180,7 @@ fun ListaComprasScreen() {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     TarjetaEstadistica("📋 Total", todosLosItems.size.toString(), Color(0xFFE3F2FD), Color(0xFF1565C0), Modifier.weight(1f))
-                    TarjetaEstadistica("⏳ Pendientes", todosLosItems.count { !it.comprado }.toString(), amarilloFondo, amarilloTexto, Modifier.weight(1f))
-                    TarjetaEstadistica("✅ Comprados", todosLosItems.count { it.comprado }.toString(), verdeComprado, verdePrincipal, Modifier.weight(1f))
+                    TarjetaEstadistica("⏳ Lista", todosLosItems.size.toString(), amarilloFondo, amarilloTexto, Modifier.weight(1f))
                 }
             }
 
@@ -242,18 +188,6 @@ fun ListaComprasScreen() {
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(selected = filtro == "todos", onClick = { filtro = "todos" }, label = { Text("Todos") })
-                    FilterChip(selected = filtro == "pendientes", onClick = { filtro = "pendientes" }, label = { Text("Pendientes") })
-                    FilterChip(selected = filtro == "comprados", onClick = { filtro = "comprados" }, label = { Text("Comprados") })
-                }
-            }
-
-            // ── Botón limpiar comprados ───────────────────────────────────
-            if (todosLosItems.any { it.comprado }) {
-                item {
-                    TextButton(
-                        onClick = { ComprasRepository.limpiarComprados() },
-                        colors = ButtonDefaults.textButtonColors(contentColor = rojoAlertaTexto)
-                    ) { Text("🗑️ Eliminar comprados") }
                 }
             }
 
@@ -261,7 +195,7 @@ fun ListaComprasScreen() {
             if (itemsFiltrados.isEmpty()) {
                 item {
                     Text(
-                        if (filtro == "todos") "Lista vacía. Sincroniza o agrega productos." else "No hay productos en esta categoría.",
+                        if (filtro == "todos") "Lista vacía. Agrega productos." else "No hay productos.",
                         fontSize = 13.sp, color = grisTextoSecundario,
                         modifier = Modifier.padding(top = 8.dp)
                     )
@@ -272,7 +206,7 @@ fun ListaComprasScreen() {
                     ElevatedCard(
                         shape = RoundedCornerShape(14.dp),
                         colors = CardDefaults.elevatedCardColors(
-                            containerColor = if (itemCompra.comprado) verdeComprado else Color.White
+                            containerColor = Color.White
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -281,8 +215,8 @@ fun ListaComprasScreen() {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Checkbox(
-                                checked = itemCompra.comprado,
-                                onCheckedChange = { ComprasRepository.marcarComprado(itemCompra.id) },
+                                checked = false,
+                                onCheckedChange = { },
                                 colors = CheckboxDefaults.colors(checkedColor = verdePrincipal)
                             )
                             Spacer(Modifier.width(8.dp))
@@ -291,16 +225,19 @@ fun ListaComprasScreen() {
                                     itemCompra.nombre,
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 15.sp,
-                                    color = if (itemCompra.comprado) grisTextoSecundario else Color(0xFF111827),
-                                    textDecoration = if (itemCompra.comprado) TextDecoration.LineThrough else TextDecoration.None
+                                    color = Color(0xFF111827)
                                 )
                                 Text(
-                                    "${itemCompra.cantidad} unidades · ${itemCompra.tipo}",
+                                    "${itemCompra.cantidad} unidades · ${itemCompra.lugarAlmacenamiento}",
                                     fontSize = 12.sp,
                                     color = grisTextoSecundario
                                 )
                             }
-                            IconButton(onClick = { ComprasRepository.eliminar(itemCompra.id) }) {
+                            IconButton(onClick = { 
+                                scope.launch {
+                                    offlineRepo.eliminarCompra(itemCompra.localId, itemCompra.id)
+                                }
+                            }) {
                                 Text("🗑️", fontSize = 18.sp)
                             }
                         }

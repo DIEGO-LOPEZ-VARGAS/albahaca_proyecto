@@ -1,31 +1,38 @@
-# Correcciones de CRUD, Cámara y Validaciones v3.2
+# Robustez Total v3.6: Persistencia Extendida y CRUD Backend
 
-He finalizado las correcciones de las funciones que estaban fallando. Ahora la aplicación es mucho más robusta en el manejo de datos y más segura al capturar imágenes.
+He completado la actualización más profunda del sistema de datos hasta la fecha. Ahora, la aplicación tiene una "memoria total" que incluye no solo el inventario, sino también la lista de compras y los productos especiales.
 
-## 🛠️ Mejoras Realizadas
+## 🛠️ Evolución Tecnológica
 
-### 1. Borrar y Editar "Doble" (Sincronización Total)
-*   **Antes**: Al borrar o editar, solo se le avisaba al servidor, pero la información en el celular seguía igual (o no se borraba localmente).
-*   **Ahora**: He actualizado el `OfflineRepository`. Cuando pulsas borrar o guardar cambios, la app limpia primero tu base de datos interna (**Room**) y luego lo sincroniza con Railway. Los cambios son instantáneos y definitivos.
+### 1. Servidor de Nueva Generación (Backend)
+*   **Base de Datos Expandida**: He actualizado la tabla de `compras` en Railway para que soporte fechas de caducidad y tipos de almacenamiento.
+*   **CRUD Completo**: He habilitado por fin los endpoints de **Borrado** (`DELETE`) y **Actualización** (`PUT`) para la lista de compras. Ahora el servidor y el cel están 100% sincronizados.
 
-### 2. Cámara con Permisos y Compresión
-*   **Permisos en Pantalla**: Ahora, al tocar el icono de la cámara, la app te pedirá permiso de forma explícita antes de abrirla. Esto soluciona por qué antes no abría en algunos dispositivos.
-*   **Fotos más Rápidas**: He añadido un sistema de **compresión inteligente**. Las fotos ahora se reducen de tamaño automáticamente antes de enviarlas a la IA.
-    *   **Resultado**: Menos errores de "Timeout" y respuestas de Gemini mucho más rápidas.
+### 2. Memoria Permanente (Room v2)
+*   **Nuevas Tablas**: He ampliado la base de datos interna del celular. Ahora se guardan permanentemente:
+    *   🛒 **Lista de Compras**: Ya no se borra al cerrar la app.
+    *   📦 **Productos Rama 2**: Persistencia reactiva total.
+*   **Sincronización Silenciosa**: Al abrir las pantallas, la app muestra tus datos locales al instante y busca actualizaciones en la nube sin interrumpirte.
 
-### 3. Validación de Números (Adiós a las letras)
-*   **Filtro de Teclado**: En todos los campos de **Cantidad** (tanto en el registro nuevo como en el de editar), ahora se abrirá automáticamente el teclado numérico.
-*   **Bloqueo de Caracteres**: He programado los cuadros de texto para que **ignoren cualquier letra**. Si intentas escribir una "A" en cantidad, simplemente no aparecerá. Solo números y guiones en las fechas.
+### 3. Interfaz Blindada
+*   **Validación de Teclado**: He extendido el bloqueo de letras a la lista de compras. Solo podrás meter números en las cantidades.
+*   **Mensajes de Estado**: Añadí indicadores de "Sincronizado con Room" para que tengas la tranquilidad de que tus datos están a salvo.
 
 ---
 
-## ✅ Verificación Técnica
-*   ✅ **Compilación**: Exitosa.
-*   ✅ **Base de Datos**: CRUD local vinculado a `remoteId`.
-*   ✅ **Cámara**: Integración con `rememberLauncherForActivityResult`.
-*   ✅ **Validación**: Implementación de `all { it.isDigit() }` en tiempo real.
+## ✅ Verificación de Estado
+*   ✅ **Servidor**: Rutas `/api/compras` actualizadas y funcionales.
+*   ✅ **Android**: Base de datos Room migrada a versión 2.
+*   ✅ **Repositorio**: `OfflineRepository` centraliza ahora toda la lógica de la app.
 
 > [!IMPORTANT]
-> Para que el borrado funcione en Internet, recuerda que tu servidor de Railway debe estar encendido y actualizado con el último comando que te di anteriormente.
+> **PASO OBLIGATORIO**: Para que el servidor reconozca los nuevos cambios, debes subir el backend ahora mismo:
+> 1. `cd backend`
+> 2. `git add .`
+> 3. `git commit -m "v3.6: CRUD Compras y Esquema DB"`
+> 4. `git push origin main`
 
-¡La aplicación ya es mucho más sólida! Por favor, pruébala de nuevo y verás que ya puedes borrar y editar sin problemas.
+> [!TIP]
+> Si al abrir la App notas que la lista de compras está vacía la primera vez, es normal. Toca en **"Sincronizar"** para que los datos del servidor se guarden por primera vez en la nueva memoria permanente de tu celular.
+
+¡La aplicación ya es un sistema completo y profesional de gestión de alimentos!

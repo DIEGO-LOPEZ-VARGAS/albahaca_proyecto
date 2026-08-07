@@ -217,9 +217,13 @@ fun RecetaView() {
             onDelete = { id ->
                 scope.launch {
                     val localId = recetaSeleccionada?.localId ?: 0
+                    android.widget.Toast.makeText(context, "Eliminando receta...", android.widget.Toast.LENGTH_SHORT).show()
                     val res = offlineRepo.eliminarReceta(localId, id)
                     res.onSuccess {
                         recetaSeleccionada = null
+                        android.widget.Toast.makeText(context, "Receta eliminada", android.widget.Toast.LENGTH_SHORT).show()
+                    }.onFailure {
+                        android.widget.Toast.makeText(context, "Error: ${it.message}", android.widget.Toast.LENGTH_SHORT).show()
                     }
                 }
             },

@@ -1,38 +1,42 @@
-# Plan de Corrección: CRUD, Cámara y Validación de Datos
+# Plan de Robustez Total v3.6: Persistencia y CRUD Completo
 
-Este plan soluciona los fallos de eliminación, edición, cámara e ingreso de datos detectados en la versión v3.1.
+Este plan soluciona la falta de persistencia en la Lista de Compras y los Productos de la Rama 2, corrigiendo la discrepancia entre el servidor y la aplicación.
+
+## Problemas Críticos Detectados
+
+### 1. Servidor "Sordo" (Backend)
+*   La tabla `compras` en el servidor no soporta `fecha_caducidad` ni `tipo_almacenamiento`.
+*   No existen rutas para eliminar o actualizar compras en el API.
+
+### 2. Memoria de Corto Plazo (Android)
+*   Los productos se pierden al cerrar la app porque no están en la base de datos Room.
+*   Las pantallas de Compras y Productos Rama 2 no usan el `OfflineRepository`.
 
 ## Cambios Propuestos
 
-### 1. Integridad de Datos (CRUD Local + Remoto)
+### A. Repositorio Backend (Railway)
 
-Actualmente, las funciones de borrar y editar solo afectan al servidor, dejando el celular con datos desactualizados.
+#### [MODIFICAR] [Entities.kt](file:///C:/Users/Darkar/StudioProjects/backend/src/main/kotlin/com/example/models/Entities.kt)
+*   Expandir el objeto `Compras` con `fechaCaducidad` y `tipoAlmacenamiento`.
+
+#### [MODIFICAR] [ProductoRepository.kt](file:///C:/Users/Darkar/StudioProjects/backend/src/main/kotlin/com/example/repository/ProductoRepository.kt)
+*   Implementar `deleteCompra` y `updateCompra`.
+
+#### [MODIFICAR] [ProductRoutes.kt](file:///C:/Users/Darkar/StudioProjects/backend/src/main/kotlin/com/example/routes/ProductRoutes.kt)
+*   Exponer `DELETE /api/compras/{id}` y `PUT /api/compras/{id}`.
+
+### B. Repositorio Android (App)
+
+#### [MODIFICAR] [Entities.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/database/Entities.kt)
+*   Añadir `CompraEntity` y `ProductoRama2Entity`.
 
 #### [MODIFICAR] [OfflineRepository.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/database/OfflineRepository.kt)
-*   **Eliminar**: Actualizar `eliminarFruta` y añadir `eliminarReceta` para que borren el registro de la base de datos Room (`localId`) además de llamar a la API.
-*   **Actualizar**: Implementar la actualización local inmediata en `actualizarFruta` y `actualizarReceta`.
+*   Añadir lógica de sincronización para Compras y Productos.
 
-### 2. Cámara y Visión IA
+#### [MODIFICAR] [ListaComprasScreen.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/ListaComprasScreen.kt)
+*   Sustituir el repositorio en memoria por el `OfflineRepository`.
 
-La cámara falla probablemente por falta de permisos o por el tamaño excesivo de la imagen.
-
-#### [MODIFICAR] [FrutaFormView.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/FrutaFormView.kt)
-*   **Permisos**: Añadir `rememberLauncherForActivityResult` para solicitar el permiso de **CÁMARA** antes de abrir el escáner.
-*   **Validación**: Verificar que el permiso esté concedido antes de mostrar el `AlertDialog` de la cámara.
-
-#### [MODIFICAR] [CameraPreview.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/CameraPreview.kt)
-*   **Optimización**: Añadir una función de compresión para que la foto capturada no pese varios megabytes, evitando errores de "Timeout" o "Payload Too Large" al enviarla a Gemini.
-
-### 3. Validación de Entradas (Solo Números)
-
-#### [MODIFICAR] [RecetaView.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/RecetaView.kt) y [FrutaFormView.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/FrutaFormView.kt)
-*   **Teclado Numérico**: Configurar `keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)` en los campos de **Cantidad**.
-*   **Filtro de Texto**: Modificar los `onValueChange` para que ignoren cualquier carácter que no sea un número en el campo de cantidad.
-*   **Fechas**: Asegurar que el campo de caducidad solo permita números y guiones (`YYYY-MM-DD`).
-
-## Verificación Plan
-
-### Manual Verification
-1.  **CRUD**: Borrar una fruta y verificar que desaparece al instante. Editar una receta y ver el cambio reflejado sin recargar.
-2.  **Cámara**: Al tocar el icono de cámara, la app debe pedir permiso. Al tomar la foto, debe ser rápida al subirla (gracias a la compresión).
-3.  **Validación**: Intentar escribir letras en el campo de "Cantidad" y verificar que no aparecen.
+## Plan de Verificación
+1.  **Cierre Forzado**: Agregar items, cerrar app, abrir y verificar persistencia.
+2.  **Sincronización Remota**: Borrar un item de la lista de compras y verificar que Railway también lo borre.
+3.  **Consistencia de Datos**: Verificar que la fecha de caducidad se mantenga al viajar del cel al servidor y de vuelta.

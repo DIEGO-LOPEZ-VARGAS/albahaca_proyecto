@@ -5,10 +5,16 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [RecetaEntity::class, FrutaEntity::class], version = 1, exportSchema = false)
+@Database(
+    entities = [RecetaEntity::class, FrutaEntity::class, CompraEntity::class, ProductoRama2Entity::class], 
+    version = 2, 
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun recetaDao(): RecetaDao
     abstract fun frutaDao(): FrutaDao
+    abstract fun compraDao(): CompraDao
+    abstract fun productoRama2Dao(): ProductoRama2Dao
 
     companion object {
         @Volatile
@@ -20,7 +26,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "albahaca_db"
-                ).build()
+                )
+                .fallbackToDestructiveMigration() // Para facilitar el desarrollo v3.6
+                .build()
                 INSTANCE = instance
                 instance
             }

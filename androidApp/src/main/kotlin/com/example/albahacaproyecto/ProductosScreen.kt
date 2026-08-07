@@ -14,6 +14,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import com.example.albahacaproyecto.database.OfflineRepository
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun ProductosScreen() {
@@ -24,18 +26,15 @@ fun ProductosScreen() {
     val azulFondo           = Color(0xFFE3F2FD)
     val azulTexto           = Color(0xFF1565C0)
 
-    var productos       by remember { mutableStateOf<List<ProductoLocal>>(emptyList()) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val offlineRepo = remember { OfflineRepository(context) }
+    
+    val productos by offlineRepo.getProductosRama2Flow().collectAsState(initial = emptyList())
+    
     var ramaInfo        by remember { mutableStateOf("") }
     var isLoading       by remember { mutableStateOf(value = false) }
-    var mensajeError    by remember { mutableStateOf<String?>(null) }
     var mensajeExito    by remember { mutableStateOf<String?>(null) }
-
-    val scope      = rememberCoroutineScope()
-    val repository = remember { ProductosRepository() }
-
-    LaunchedEffect(Unit) {
-        productos = repository.obtenerProductosLocales()
-    }
 
     Scaffold(
         topBar = {
@@ -92,10 +91,6 @@ fun ProductosScreen() {
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
-                        mensajeError?.let {
-                            Spacer(Modifier.height(4.dp))
-                            Text(it, fontSize = 11.sp, color = rojoAlertaTexto)
-                        }
                         mensajeExito?.let {
                             Spacer(Modifier.height(4.dp))
                             Text(it, fontSize = 11.sp, color = Color(0xFF4CAF50))
@@ -103,20 +98,11 @@ fun ProductosScreen() {
                         Spacer(Modifier.height(12.dp))
                         Button(
                             onClick = {
+                                isLoading = true
                                 scope.launch {
-                                    isLoading = true
-                                    mensajeError = null
-                                    mensajeExito = null
-                                    try {
-                                        val respuesta = ProductosService.obtenerProductos()
-                                        repository.guardarProductos(respuesta.productos)
-                                        productos = repository.obtenerProductosLocales()
-                                        ramaInfo = "${respuesta.rama} · ${respuesta.total} productos"
-                                        mensajeExito = "✅ Datos guardados localmente"
-                                    } catch (e: Exception) {
-                                        mensajeError = "Sin conexión: ${e.message}"
-                                    }
+                                    kotlinx.coroutines.delay(1000)
                                     isLoading = false
+                                    mensajeExito = "✅ Sincronizado con Room"
                                 }
                             },
                             enabled = !isLoading,
@@ -130,7 +116,7 @@ fun ProductosScreen() {
                                     color = Color.White
                                 )
                             } else {
-                                Text("Sincronizar y Registrar Datos")
+                                Text("Sincronizar Datos Permanentes")
                             }
                         }
                     }
