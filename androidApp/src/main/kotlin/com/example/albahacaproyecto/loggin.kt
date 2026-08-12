@@ -73,6 +73,18 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
     // Inicialización del ayudante biométrico
     val biometricHelper = remember { AndroidBiometricHelper(context) }
 
+    // 🔥 DISPARADOR AUTOMÁTICO DE HUELLA
+    // Si la App detecta que ya hay una sesión guardada, lanza el lector nada más abrirse
+    LaunchedEffect(Unit) {
+        if (KtorClient.sessionToken != null) {
+            val exito = biometricHelper.lanzarLectorHuella()
+            if (exito) {
+                Toast.makeText(context, "¡Acceso concedido!", Toast.LENGTH_SHORT).show()
+                onLoginExitoso()
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -172,8 +184,8 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
                     VerduritasTextField(
                         value = usuario,
                         onValueChange = { usuario = it },
-                        label = "Nombre de usuario",
-                        placeholder = "usuario@verduritas.com",
+                        label = "Usuario o Correo",
+                        placeholder = "Ingresa tu nombre o email",
                         leadingIcon = Icons.Default.AccountCircle
                     )
 
@@ -209,17 +221,17 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
                             coroutineScope.launch {
                                 isLoading = true
 
-                                // Llamamos a RailwayKtorService pasando el contexto de Android
-                                val loginExitoso = RailwayKtorService.loginUsuario(context, usuario, contrasena)
+                                // Llamamos a RailwayKtorService y recibimos el error detallado (o null)
+                                val errorLogin = RailwayKtorService.loginUsuario(context, usuario, contrasena)
 
-                                if (loginExitoso) {
+                                if (errorLogin == null) {
                                     // Guardar la sesión de forma persistente (Token y Nombre)
                                     sessionManager.saveSession(KtorClient.sessionToken, KtorClient.userName)
                                     // Cambia de pantalla (Ejecuta la lambda de éxito)
                                     onLoginExitoso()
                                 } else {
-                                    // Si regresa falso, asumimos credenciales incorrectas o error en el servidor
-                                    Toast.makeText(context, "Credenciales inválidas", Toast.LENGTH_SHORT).show()
+                                    // Mostramos el error REAL en pantalla
+                                    Toast.makeText(context, errorLogin, Toast.LENGTH_LONG).show()
                                 }
 
                                 isLoading = false

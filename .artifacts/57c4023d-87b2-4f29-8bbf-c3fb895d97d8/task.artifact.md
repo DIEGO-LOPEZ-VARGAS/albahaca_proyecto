@@ -1,24 +1,13 @@
-# Tareas: Robustez Total v3.6 (Persistencia Completa) - COMPLETADO
+# Tareas: Restauración de IA v4.1 - COMPLETADO
 
-- [x] **Fase 1: Refuerzo del Backend (Railway)**
-    - [x] Expandir tabla `compras` en `Entities.kt`
-    - [x] Actualizar `ProductoDto` en `Dtos.kt`
-    - [x] Implementar lógica CRUD en `ProductoRepository.kt`
-    - [x] Crear endpoints en `ProductRoutes.kt`
-
-- [x] **Fase 2: Expansión de Room (Android)**
-    - [x] Definir `CompraEntity` y `ProductoRama2Entity`
-    - [x] Implementar `CompraDao` y `ProductoRama2Dao`
-    - [x] Actualizar `AppDatabase.kt` (Versión 2 + Migración Destructiva)
-
-- [x] **Fase 3: Repositorio Inteligente (Android)**
-    - [x] Integrar Compras en `OfflineRepository`
-    - [x] Integrar Rama 2 en `OfflineRepository`
-
-- [x] **Fase 4: Conexión de Vistas (Android)**
-    - [x] Refactorizar `ListaComprasScreen.kt`
-    - [x] Refactorizar `ProductosScreen.kt`
-
-- [x] **Fase 5: Verificación**
-    - [x] Validar compilación dual (Backend + App)
-    - [x] Pruebas de persistencia offline
+- [x] **Backend: Restaurar Versiones Gemini**
+    - [x] Revertir URL y modelo en `/api/recetas/ia` (v3 Flash Preview + v1beta)
+    - [x] Asegurar URL y modelo en `/api/recetas/nutricion`
+    - [x] Asegurar URL y modelo en `/api/inventario/vision`
+- [x] **Backend: Refuerzo de Procesamiento**
+    - [x] Mejorar extractor de JSON para objetos `{}` en recetas y nutrición
+    - [x] Mejorar extractor de JSON para listas `[]` en visión
+    - [x] Añadir logs de depuración para respuestas crudas
+- [x] **Verificación**
+    - [x] Validar compilación del backend
+    - [x] Preparar para subida a Railway

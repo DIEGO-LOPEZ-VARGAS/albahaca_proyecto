@@ -62,7 +62,8 @@ class MainActivity : FragmentActivity() { // 🔥 CAMBIADO DE ComponentActivity 
                 val savedName = sessionManager.getUserName()
                 if (savedToken != null) {
                     KtorClient.sessionToken = savedToken
-                    isLoggedIn = true // Si hay token, entrar directo al menú
+                    // 🔥 SE ELIMINÓ: isLoggedIn = true
+                    // Ahora la App carga el token pero se detiene en el Login para pedir la huella
                 }
                 if (savedName != null) {
                     KtorClient.userName = savedName

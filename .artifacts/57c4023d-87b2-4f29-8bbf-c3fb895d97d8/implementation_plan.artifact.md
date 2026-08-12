@@ -1,42 +1,27 @@
-# Plan de Robustez Total v3.6: Persistencia y CRUD Completo
+# Plan de Mejora UX: Selector de Fecha (DatePicker)
 
-Este plan soluciona la falta de persistencia en la Lista de Compras y los Productos de la Rama 2, corrigiendo la discrepancia entre el servidor y la aplicación.
-
-## Problemas Críticos Detectados
-
-### 1. Servidor "Sordo" (Backend)
-*   La tabla `compras` en el servidor no soporta `fecha_caducidad` ni `tipo_almacenamiento`.
-*   No existen rutas para eliminar o actualizar compras en el API.
-
-### 2. Memoria de Corto Plazo (Android)
-*   Los productos se pierden al cerrar la app porque no están en la base de datos Room.
-*   Las pantallas de Compras y Productos Rama 2 no usan el `OfflineRepository`.
+Este plan tiene como objetivo facilitar el ingreso de la fecha de caducidad sustituyendo la escritura manual por un selector de calendario (DatePicker) moderno.
 
 ## Cambios Propuestos
 
-### A. Repositorio Backend (Railway)
+### 1. Integración de Material 3 DatePicker (Android)
 
-#### [MODIFICAR] [Entities.kt](file:///C:/Users/Darkar/StudioProjects/backend/src/main/kotlin/com/example/models/Entities.kt)
-*   Expandir el objeto `Compras` con `fechaCaducidad` y `tipoAlmacenamiento`.
+#### [MODIFICAR] [FrutaFormView.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/FrutaFormView.kt)
+*   **Estado**: Añadir `DatePickerState` para gestionar la selección de fecha.
+*   **Interfaz**:
+    *   Hacer que el campo "Caducidad" sea de solo lectura para evitar errores de formato.
+    *   Añadir un icono de calendario que, al pulsarlo, abra un `DatePickerDialog`.
+    *   Convertir automáticamente la selección del calendario al formato `YYYY-MM-DD` que requiere el servidor.
+*   **Diálogo de Edición**: Aplicar la misma lógica en `EditarFrutaDialog` para mantener la consistencia.
 
-#### [MODIFICAR] [ProductoRepository.kt](file:///C:/Users/Darkar/StudioProjects/backend/src/main/kotlin/com/example/repository/ProductoRepository.kt)
-*   Implementar `deleteCompra` y `updateCompra`.
-
-#### [MODIFICAR] [ProductRoutes.kt](file:///C:/Users/Darkar/StudioProjects/backend/src/main/kotlin/com/example/routes/ProductRoutes.kt)
-*   Exponer `DELETE /api/compras/{id}` y `PUT /api/compras/{id}`.
-
-### B. Repositorio Android (App)
-
-#### [MODIFICAR] [Entities.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/database/Entities.kt)
-*   Añadir `CompraEntity` y `ProductoRama2Entity`.
-
-#### [MODIFICAR] [OfflineRepository.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/database/OfflineRepository.kt)
-*   Añadir lógica de sincronización para Compras y Productos.
-
-#### [MODIFICAR] [ListaComprasScreen.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/ListaComprasScreen.kt)
-*   Sustituir el repositorio en memoria por el `OfflineRepository`.
+## Beneficios
+*   **Cero Errores**: Se elimina la posibilidad de escribir fechas con formato incorrecto (ej. meses mayores a 12).
+*   **Rapidez**: Es mucho más rápido tocar un día en el calendario que escribir 10 caracteres.
+*   **Estética**: La app se verá más profesional usando los componentes nativos de Material 3.
 
 ## Plan de Verificación
-1.  **Cierre Forzado**: Agregar items, cerrar app, abrir y verificar persistencia.
-2.  **Sincronización Remota**: Borrar un item de la lista de compras y verificar que Railway también lo borre.
-3.  **Consistencia de Datos**: Verificar que la fecha de caducidad se mantenga al viajar del cel al servidor y de vuelta.
+1.  **Registro Nuevo**: Tocar el campo de caducidad, elegir una fecha en el calendario y verificar que el campo se llena solo.
+2.  **Edición**: Abrir el diálogo de editar y cambiar la fecha usando el calendario.
+3.  **Formato**: Confirmar que al guardar, la fecha llega al servidor como `YYYY-MM-DD`.
+
+**¿Deseas que implemente el selector de calendario ahora mismo?**

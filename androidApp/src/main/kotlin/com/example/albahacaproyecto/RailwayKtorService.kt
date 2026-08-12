@@ -38,44 +38,37 @@ object RailwayKtorService {
 
     /**
      * POST /login - Envía los datos al backend y lanza la notificación si es exitoso
+     * Retorna NULL si es exitoso, o el mensaje de error si falla.
      */
-    suspend fun loginUsuario(context: Context, usuario: String, contrasena: String): Boolean {
+    suspend fun loginUsuario(context: Context, usuario: String, contrasena: String): String? {
         return try {
             Log.d("DEPURACION_ALBAHACA", "Enviando POST de Login Real a: $BASE_URL/login")
 
-            // Mandamos la petición POST a tu backend de Ktor
             val response: HttpResponse = client.post("$BASE_URL/login") {
                 contentType(ContentType.Application.Json)
-                // 💡 CORRECCIÓN TÉCNICA: Mapeamos la variable local 'contrasena' al atributo 'password' del KtorClient
                 setBody(LoginRequest(usuario = usuario, password = contrasena))
             }
 
-            // Registramos la petición en tu repositorio local de historial
             val repo = RailwayRepository()
             repo.guardarPeticion("POST", "/login", response.status.value)
 
-            // Si el servidor backend responde que el usuario es válido (HTTP 200 OK)
-            if (response.status == HttpStatusCode.OK) {
-
-                // Guardamos el token y el nombre recibidos en el KtorClient
-                val loginData = response.body<LoginResponse>()
-                KtorClient.sessionToken = loginData.token
-                KtorClient.userName = loginData.nombre
-                Log.d("DEPURACION_ALBAHACA", "TOKEN GUARDADO: ${KtorClient.sessionToken}")
-                Log.d("DEPURACION_ALBAHACA", "NOMBRE GUARDADO: ${KtorClient.userName}")
-
-                // 🔥 DISPARAMOS LA NOTIFICACIÓN NATIVA DESDE AQUÍ
-                mostrarNotificacionNativa(context)
-
-                true
-            } else {
-                Log.w("DEPURACION_ALBAHACA", "Login fallido en servidor con código: ${response.status.value}")
-                false
+            when (response.status) {
+                HttpStatusCode.OK -> {
+                    val loginData = response.body<LoginResponse>()
+                    KtorClient.sessionToken = loginData.token
+                    KtorClient.userName = loginData.nombre
+                    Log.d("DEPURACION_ALBAHACA", "LOGIN EXITOSO: Token obtenido.")
+                    mostrarNotificacionNativa(context)
+                    null // Éxito
+                }
+                HttpStatusCode.Unauthorized -> "Usuario o contraseña incorrectos"
+                HttpStatusCode.NotFound -> "Servidor no responde (404)"
+                HttpStatusCode.BadGateway -> "El servidor se está despertando, intenta de nuevo en 5 segundos"
+                else -> "Error del servidor: ${response.status.value}"
             }
         } catch (e: Exception) {
-            Log.e("DEPURACION_ALBAHACA", "Falla de red o de host en loginUsuario: ${e.message}")
-            e.printStackTrace()
-            false
+            Log.e("DEPURACION_ALBAHACA", "Falla de red en loginUsuario: ${e.message}")
+            "Error de red: El servidor no está disponible en este momento"
         }
     }
 

@@ -55,12 +55,34 @@ fun FrutaFormView() {
     var frutaAEditar by remember { mutableStateOf<Fruta?>(null) }
     
     var mostrarCamara by remember { mutableStateOf(false) }
+    var mostrarDatePicker by remember { mutableStateOf(false) }
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) mostrarCamara = true
         else android.widget.Toast.makeText(context, "Permiso de cámara denegado", android.widget.Toast.LENGTH_SHORT).show()
+    }
+
+    if (mostrarDatePicker) {
+        val datePickerState = rememberDatePickerState()
+        DatePickerDialog(
+            onDismissRequest = { mostrarDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                        fechaCaducidad = sdf.format(java.util.Date(millis))
+                    }
+                    mostrarDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDatePicker = false }) { Text("Cancelar") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
     }
 
     if (mostrarCamara) {
@@ -196,14 +218,12 @@ fun FrutaFormView() {
                         )
                         VerduritasInputField(
                             value = fechaCaducidad,
-                            onValueChange = { newValue ->
-                                if (newValue.all { it.isDigit() || it == '-' }) {
-                                    fechaCaducidad = newValue
-                                }
-                            },
+                            onValueChange = { },
                             label = "Caducidad",
-                            placeholder = "YYYY-MM-DD",
-                            modifier = Modifier.weight(1f)
+                            placeholder = "Toca para elegir",
+                            icon = Icons.Default.CalendarToday,
+                            modifier = Modifier.weight(1f).clickable { mostrarDatePicker = true },
+                            readOnly = true
                         )
                     }
 
@@ -354,6 +374,7 @@ fun VerduritasInputField(
     placeholder: String,
     icon: ImageVector? = null,
     isNumeric: Boolean = false,
+    readOnly: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -367,6 +388,7 @@ fun VerduritasInputField(
             keyboardOptions = KeyboardOptions(
                 keyboardType = if (isNumeric) KeyboardType.Number else KeyboardType.Text
             ),
+            readOnly = readOnly,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             colors = TextFieldDefaults.colors(
@@ -493,6 +515,29 @@ fun EditarFrutaDialog(fruta: Fruta, onDismiss: () -> Unit, onUpdate: (Int, Fruta
     var cantidadEdit by remember { mutableStateOf(fruta.cantidad.toString()) }
     var fechaEdit by remember { mutableStateOf(fruta.fechaCaducidad) }
     var lugarEdit by remember { mutableStateOf(fruta.lugarAlmacenamiento) }
+    
+    var mostrarDatePicker by remember { mutableStateOf(false) }
+
+    if (mostrarDatePicker) {
+        val datePickerState = rememberDatePickerState()
+        DatePickerDialog(
+            onDismissRequest = { mostrarDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                        fechaEdit = sdf.format(java.util.Date(millis))
+                    }
+                    mostrarDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDatePicker = false }) { Text("Cancelar") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -508,9 +553,11 @@ fun EditarFrutaDialog(fruta: Fruta, onDismiss: () -> Unit, onUpdate: (Int, Fruta
                 )
                 OutlinedTextField(
                     value = fechaEdit, 
-                    onValueChange = { if (it.all { c -> c.isDigit() || c == '-' }) fechaEdit = it }, 
-                    label = { Text("Caducidad (YYYY-MM-DD)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    onValueChange = { }, 
+                    label = { Text("Caducidad") },
+                    readOnly = true,
+                    modifier = Modifier.clickable { mostrarDatePicker = true },
+                    trailingIcon = { Icon(Icons.Default.CalendarMonth, null) }
                 )
                 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
