@@ -1,27 +1,28 @@
-# Selector de Calendario Implementado v4.2
+# Selector de Fecha Corregido y Visible v4.2.1
 
-He actualizado la aplicación para que el ingreso de la fecha de caducidad sea mucho más fácil y rápido, eliminando la necesidad de escribir números y guiones a mano.
+He solucionado los problemas técnicos que impedían que la fecha de caducidad se seleccionara o se mostrara correctamente.
 
-## 🛠️ Mejoras de Interfaz (UX)
+## 🛠️ Mejoras de Funcionamiento y Visibilidad
 
-### 1. Calendario Mágico (DatePicker)
-*   **Antes**: Tenías que escribir la fecha con el formato exacto `2026-08-10`. Si te faltaba un guión o ponías un número mal, la app podía fallar.
-*   **Ahora**: Al tocar el campo de **"Caducidad"**, se abrirá automáticamente un **calendario elegante de Material 3**. Solo tienes que elegir el día y pulsar "OK". La app pondrá el formato perfecto por ti.
+### 1. Clics Garantizados
+*   **Problema**: El campo de fecha a veces no respondía al toque porque el sistema intentaba darle "foco" para escribir en lugar de abrir el calendario.
+*   **Solución**: He añadido una **capa invisible de detección de clics** sobre el campo de caducidad. Ahora, no importa dónde toques el cuadro, el calendario se abrirá al instante de forma 100% fiable.
 
-### 2. Bloqueo de Errores
-*   He convertido el campo de fecha en **solo lectura**. Esto significa que ya no saldrá el teclado al tocarlo; en su lugar, se abrirá el calendario. Esto garantiza que la base de datos siempre tenga fechas válidas.
+### 2. Precisión de Fecha (Sin desfases)
+*   **Problema**: Debido a la zona horaria, a veces elegías un día y la app guardaba el día anterior.
+*   **Solución**: He forzado el uso del **horario universal (UTC)** en el calendario. El día que toques será exactamente el día que se guarde, sin sorpresas.
 
-### 3. Consistencia en Edición
-*   Esta mejora también se ha aplicado al diálogo de **Editar Alimento**. Ya sea que estés registrando algo nuevo o corrigiendo uno viejo, siempre tendrás el calendario a la mano.
+### 3. Fecha Visible en la Lista
+*   **Mejora**: Ahora, las tarjetas de tus alimentos muestran la fecha de caducidad exacta entre paréntesis, por ejemplo: *"Quedan 5 días (2026-08-20)"*. Así siempre tendrás la certeza de qué fecha elegiste.
 
 ---
 
-## ✅ Verificación del Cambio
-*   ✅ **DatePicker**: Integrado con los temas de color de "Verduritas".
-*   ✅ **Formato**: Salida forzada a `YYYY-MM-DD`.
-*   ✅ **Compilación**: Exitosa.
+## ✅ Resumen Técnico
+*   ✅ **Interacción**: Clics robustos mediante `matchParentSize()`.
+*   ✅ **Lógica**: Sincronización UTC en `DatePickerState`.
+*   ✅ **UI**: Actualización de `FoodItemCard` para mayor transparencia de datos.
 
 > [!TIP]
-> Si te equivocas de fecha, simplemente vuelve a tocar el cuadro de texto y el calendario se abrirá de nuevo para que elijas el día correcto.
+> Si al tocar el calendario notas que se abre muy rápido, es porque el sistema ya no tiene que esperar a que el teclado se oculte.
 
-¡La aplicación ahora es mucho más cómoda de usar! Dale a **Run (▶️)** para probar el nuevo calendario.
+¡La gestión de fechas ahora es perfecta! Dale a **Run (▶️)** para disfrutar de estas mejoras.

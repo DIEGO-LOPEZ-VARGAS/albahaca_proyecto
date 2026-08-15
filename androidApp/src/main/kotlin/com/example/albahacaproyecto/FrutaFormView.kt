@@ -72,6 +72,7 @@ fun FrutaFormView() {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
                         val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                        sdf.timeZone = java.util.TimeZone.getTimeZone("UTC") // 🔥 Forzar UTC para evitar desfases
                         fechaCaducidad = sdf.format(java.util.Date(millis))
                     }
                     mostrarDatePicker = false
@@ -222,8 +223,9 @@ fun FrutaFormView() {
                             label = "Caducidad",
                             placeholder = "Toca para elegir",
                             icon = Icons.Default.CalendarToday,
-                            modifier = Modifier.weight(1f).clickable { mostrarDatePicker = true },
-                            readOnly = true
+                            modifier = Modifier.weight(1f),
+                            readOnly = true,
+                            onClick = { mostrarDatePicker = true } // 🔥 Nueva lambda para clics seguros
                         )
                     }
 
@@ -375,29 +377,41 @@ fun VerduritasInputField(
     icon: ImageVector? = null,
     isNumeric: Boolean = false,
     readOnly: Boolean = false,
+    onClick: (() -> Unit)? = null, // 🔥 Nueva lambda opcional
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
         Text(text = label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF494455))
         Spacer(Modifier.height(4.dp))
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            placeholder = { Text(placeholder, color = Color(0xFFCAC3D8)) },
-            leadingIcon = icon?.let { { Icon(it, null, tint = Color(0xFF7A7487)) } },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = if (isNumeric) KeyboardType.Number else KeyboardType.Text
-            ),
-            readOnly = readOnly,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFFCF9F8),
-                unfocusedContainerColor = Color(0xFFFCF9F8),
-                focusedIndicatorColor = Color(0xFF632CE5),
-                unfocusedIndicatorColor = Color.Transparent
+        Box(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                placeholder = { Text(placeholder, color = Color(0xFFCAC3D8)) },
+                leadingIcon = icon?.let { { Icon(it, null, tint = Color(0xFF7A7487)) } },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = if (isNumeric) KeyboardType.Number else KeyboardType.Text
+                ),
+                readOnly = readOnly,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFFFCF9F8),
+                    unfocusedContainerColor = Color(0xFFFCF9F8),
+                    focusedIndicatorColor = Color(0xFF632CE5),
+                    unfocusedIndicatorColor = Color.Transparent
+                )
             )
-        )
+            
+            // 🔥 Capa invisible para capturar clics si es de solo lectura
+            if (readOnly && onClick != null) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable(onClick = onClick)
+                )
+            }
+        }
     }
 }
 
@@ -491,7 +505,9 @@ fun FoodItemCard(name: String, quantity: Int, color: Color, fechaCaducidad: Stri
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        text = if (diasRestantes >= 0) "Quedan $diasRestantes días" else if (fechaCaducidad.isBlank()) "Sin fecha" else "¡EXPIRADO!", 
+                        text = if (diasRestantes >= 0) "Quedan $diasRestantes días ($fechaCaducidad)" 
+                               else if (fechaCaducidad.isBlank()) "Sin fecha" 
+                               else "¡EXPIRADO! ($fechaCaducidad)", 
                         fontSize = 12.sp, 
                         color = colorAlerta
                     )
@@ -526,6 +542,7 @@ fun EditarFrutaDialog(fruta: Fruta, onDismiss: () -> Unit, onUpdate: (Int, Fruta
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
                         val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                        sdf.timeZone = java.util.TimeZone.getTimeZone("UTC") // 🔥 Forzar UTC
                         fechaEdit = sdf.format(java.util.Date(millis))
                     }
                     mostrarDatePicker = false
@@ -551,14 +568,18 @@ fun EditarFrutaDialog(fruta: Fruta, onDismiss: () -> Unit, onUpdate: (Int, Fruta
                     label = { Text("Cantidad") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
-                OutlinedTextField(
-                    value = fechaEdit, 
-                    onValueChange = { }, 
-                    label = { Text("Caducidad") },
-                    readOnly = true,
-                    modifier = Modifier.clickable { mostrarDatePicker = true },
-                    trailingIcon = { Icon(Icons.Default.CalendarMonth, null) }
-                )
+                Box(modifier = Modifier.fillMaxWidth().clickable { mostrarDatePicker = true }) {
+                    OutlinedTextField(
+                        value = fechaEdit, 
+                        onValueChange = { }, 
+                        label = { Text("Caducidad") },
+                        readOnly = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = { Icon(Icons.Default.CalendarMonth, null) }
+                    )
+                    // Capa invisible para clic
+                    Box(modifier = Modifier.matchParentSize().clickable { mostrarDatePicker = true })
+                }
                 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(

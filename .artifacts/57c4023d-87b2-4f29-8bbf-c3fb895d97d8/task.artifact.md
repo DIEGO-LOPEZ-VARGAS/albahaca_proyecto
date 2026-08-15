@@ -1,13 +1,11 @@
-# Tareas: Restauración de IA v4.1 - COMPLETADO
+# Tareas: Reparación de Selector de Fecha y Visibilidad - COMPLETADO
 
-- [x] **Backend: Restaurar Versiones Gemini**
-    - [x] Revertir URL y modelo en `/api/recetas/ia` (v3 Flash Preview + v1beta)
-    - [x] Asegurar URL y modelo en `/api/recetas/nutricion`
-    - [x] Asegurar URL y modelo en `/api/inventario/vision`
-- [x] **Backend: Refuerzo de Procesamiento**
-    - [x] Mejorar extractor de JSON para objetos `{}` en recetas y nutrición
-    - [x] Mejorar extractor de JSON para listas `[]` en visión
-    - [x] Añadir logs de depuración para respuestas crudas
+- [x] **Ajuste de UI y Clics (FrutaFormView)**
+    - [x] Mejorar `VerduritasInputField` para detectar clics en modo `readOnly` (Capa invisible añadida)
+    - [x] Asegurar que el calendario use UTC para evitar desfases de días
+- [x] **Mejora de Visualización**
+    - [x] Actualizar `FoodItemCard` para mostrar la fecha de caducidad guardada entre paréntesis
+- [x] **Consistencia en Diálogos**
+    - [x] Aplicar mejoras de selección de fecha en `EditarFrutaDialog`
 - [x] **Verificación**
-    - [x] Validar compilación del backend
-    - [x] Preparar para subida a Railway
+    - [x] Validar compilación exitosa
