@@ -1,11 +1,12 @@
-# Tareas: Reparación de Selector de Fecha y Visibilidad - COMPLETADO
+# Tareas: Eliminación de Duplicados v4.3
 
-- [x] **Ajuste de UI y Clics (FrutaFormView)**
-    - [x] Mejorar `VerduritasInputField` para detectar clics en modo `readOnly` (Capa invisible añadida)
-    - [x] Asegurar que el calendario use UTC para evitar desfases de días
-- [x] **Mejora de Visualización**
-    - [x] Actualizar `FoodItemCard` para mostrar la fecha de caducidad guardada entre paréntesis
-- [x] **Consistencia en Diálogos**
-    - [x] Aplicar mejoras de selección de fecha en `EditarFrutaDialog`
-- [x] **Verificación**
-    - [x] Validar compilación exitosa
+- [ ] **Backend: Retorno de Identidad**
+    - [ ] Modificar `ProductoRepository.kt` para devolver objetos insertados
+    - [ ] Modificar `RecetaRepository.kt` para devolver objetos insertados
+    - [ ] Actualizar rutas en `ProductRoutes.kt` (POST) para devolver JSON
+- [ ] **Android: Vínculo de ID Remoto**
+    - [ ] Actualizar `OfflineRepository.kt` para capturar el `remoteId` tras guardar
+    - [ ] Implementar limpieza de duplicados por nombre durante la sincronización
+- [ ] **Verificación**
+    - [ ] Validar compilación dual
+    - [ ] Confirmar que no se duplican items al guardar/sincronizar

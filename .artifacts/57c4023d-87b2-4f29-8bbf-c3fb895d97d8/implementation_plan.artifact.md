@@ -1,31 +1,36 @@
-# Plan de Reparación: Selector de Fecha y Visibilidad v4.2.1
+# Plan de Corrección de Duplicados v4.3
 
-Este plan soluciona el fallo donde la fecha de caducidad no se muestra o no se puede seleccionar correctamente.
+Este plan soluciona el problema de duplicidad de datos al asegurar un vínculo sólido entre los registros locales (Room) y los remotos (Railway) mediante el retorno de IDs desde el servidor.
 
 ## Problemas Detectados
 
-### 1. Intercepción de Eventos de Toque
-*   **Causa**: El `OutlinedTextField` consume los eventos de clic para el foco, impidiendo que el `Modifier.clickable` del padre (el Column) se active de manera confiable.
-*   **Solución**: Utilizar `enabled = false` con colores personalizados o un `Box` superpuesto para garantizar la captura del clic.
+### 1. Desconexión de Identidad
+*   **Causa**: Al guardar un producto o receta, el servidor responde con un texto ("Guardado") en lugar del objeto creado. La App no sabe qué ID le asignó el servidor.
+*   **Consecuencia**: En la siguiente sincronización, la App descarga el mismo objeto, pero como no conoce su ID, lo inserta como uno nuevo en el celular.
 
-### 2. Error de Desfase de Fecha (Timezone)
-*   **Causa**: `selectedDateMillis` devuelve UTC, pero `SimpleDateFormat` usa la zona horaria local, lo que puede causar desfases de un día.
-*   **Solución**: Forzar `TimeZone("UTC")` en el formateador de fecha.
-
-### 3. Falta de Retroalimentación en la Lista
-*   **Causa**: La tarjeta del producto (`FoodItemCard`) solo muestra los días restantes, no la fecha exacta seleccionada.
-*   **Solución**: Añadir la fecha de caducidad explícita en el diseño de la tarjeta.
+### 2. Lógica de Guardado "Ciega"
+*   **Causa**: La App inserta en la base de datos local pero no recupera el `localId` generado para vincularlo con el futuro `remoteId`.
 
 ## Cambios Propuestos
 
-### Componente: Android App
+### A. Repositorio Backend (Railway)
 
-#### [MODIFICAR] [FrutaFormView.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/FrutaFormView.kt)
-*   Refactorizar `VerduritasInputField` para manejar clics de forma robusta cuando es `readOnly`.
-*   Asegurar que la selección de fecha use UTC.
-*   Actualizar `FoodItemCard` para mostrar la fecha de caducidad guardada.
+#### [MODIFICAR] [ProductoRepository.kt](file:///C:/Users/Darkar/StudioProjects/backend/src/main/kotlin/com/example/repository/ProductoRepository.kt) y [RecetaRepository.kt](file:///C:/Users/Darkar/StudioProjects/backend/src/main/kotlin/com/example/repository/RecetaRepository.kt)
+*   Cambiar los métodos `add...` para que devuelvan el objeto completo recién insertado (usando `resultedValues`).
+
+#### [MODIFICAR] [ProductRoutes.kt](file:///C:/Users/Darkar/StudioProjects/backend/src/main/kotlin/com/example/routes/ProductRoutes.kt)
+*   Actualizar los endpoints `POST /api/frutas`, `POST /api/recetas` y `POST /api/compras` para que devuelvan el objeto en formato JSON.
+
+### B. Aplicación Android (Lógica de Sincronización)
+
+#### [MODIFICAR] [OfflineRepository.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/database/OfflineRepository.kt)
+*   **Refactorizar `guardar...`**:
+    1.  Guardar localmente y obtener el `localId`.
+    2.  Subir al servidor.
+    3.  Al recibir la respuesta exitosa con el ID remoto, actualizar el registro local para "unirlos".
+*   **Eliminar Duplicados Existentes**: Añadir una limpieza automática de items con `remoteId = 0` que ya existan en la nube por nombre/título durante la sincronización inicial.
 
 ## Plan de Verificación
-1.  **Prueba de Toque**: Verificar que al tocar cualquier parte del campo "Caducidad", el calendario se abra instantáneamente.
-2.  **Prueba de Exactitud**: Seleccionar el día de hoy en el calendario y verificar que aparezca el día correcto en el campo.
-3.  **Prueba de Visualización**: Confirmar que los productos en la lista ahora muestran su fecha (ej. "Caduca: 2026-08-30").
+1.  **Cero Duplicados**: Crear un producto con internet lento. Verificar que aparece una vez. Forzar sincronización y confirmar que no se repite.
+2.  **Vínculo de ID**: Verificar en los logs que el `remoteId` se asigna correctamente al `localId` tras el guardado.
+3.  **Compilación**: Validar que el Backend y la App sigan comunicándose sin errores de tipo.

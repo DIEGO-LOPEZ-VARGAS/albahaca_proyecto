@@ -5,6 +5,7 @@ import com.example.albahacaproyecto.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import io.ktor.client.request.*
+import io.ktor.client.call.body
 import io.ktor.http.*
 
 class OfflineRepository(context: Context) {
@@ -26,7 +27,10 @@ class OfflineRepository(context: Context) {
             try {
                 recetaApi.obtenerRecetas().onSuccess { cloudList ->
                     cloudList.forEach { r ->
-                        val existing = recetaDao.getByRemoteId(r.id)
+                        // Búsqueda inteligente para evitar duplicados por título si remoteId es 0
+                        val existing = recetaDao.getByRemoteId(r.id) 
+                            ?: recetaDao.getAllRecetas().find { it.titulo == r.titulo && it.remoteId == 0 }
+
                         val entity = RecetaEntity(
                             localId = existing?.localId ?: 0,
                             remoteId = r.id,
@@ -46,18 +50,40 @@ class OfflineRepository(context: Context) {
         }
     }
 
+    suspend fun getRecetas(): List<Receta> {
+        return recetaDao.getAllRecetas().map { it.toDomain() }
+    }
+
     suspend fun guardarReceta(r: Receta): Result<Boolean> {
-        val res = recetaApi.enviarReceta(r)
-        val entity = RecetaEntity(
-            localId = r.localId,
-            remoteId = r.id,
+        // 1. Guardar localmente primero para obtener el localId
+        val initialEntity = RecetaEntity(
             titulo = r.titulo,
             ingredientes = r.ingredientes,
             pasos = r.pasos,
-            sincronizado = res.isSuccess
+            sincronizado = false
         )
-        recetaDao.insertReceta(entity)
-        return res
+        recetaDao.insertReceta(initialEntity)
+        
+        val localRecord = recetaDao.getAllRecetas().find { it.titulo == r.titulo && it.remoteId == 0 }
+
+        // 2. Intentar subir al servidor
+        val res = recetaApi.enviarReceta(r)
+        
+        res.onSuccess { savedReceta ->
+            // 3. Vincular con el ID remoto recibido
+            if (localRecord != null) {
+                recetaDao.insertReceta(RecetaEntity(
+                    localId = localRecord.localId,
+                    remoteId = savedReceta.id,
+                    titulo = savedReceta.titulo,
+                    ingredientes = savedReceta.ingredientes,
+                    pasos = savedReceta.pasos,
+                    sincronizado = true
+                ))
+            }
+        }
+        
+        return Result.success(res.isSuccess)
     }
 
     suspend fun eliminarReceta(localId: Int, remoteId: Int): Result<Boolean> {
@@ -85,7 +111,10 @@ class OfflineRepository(context: Context) {
             try {
                 frutaApi.obtenerFrutas().onSuccess { cloudList ->
                     cloudList.forEach { f ->
+                        // Fusión inteligente por nombre si remoteId es 0
                         val existing = frutaDao.getByRemoteId(f.id)
+                            ?: frutaDao.getAllFrutas().find { it.nombre == f.nombre && it.remoteId == 0 }
+
                         val entity = FrutaEntity(
                             localId = existing?.localId ?: 0,
                             remoteId = f.id,
@@ -111,18 +140,36 @@ class OfflineRepository(context: Context) {
     }
 
     suspend fun guardarFruta(f: Fruta): Result<Boolean> {
-        val res = frutaApi.enviarFruta(f)
-        val entity = FrutaEntity(
-            localId = f.localId,
-            remoteId = f.id,
+        // 1. Local
+        val initialEntity = FrutaEntity(
             nombre = f.nombre,
             cantidad = f.cantidad,
             fechaCaducidad = f.fechaCaducidad,
             lugarAlmacenamiento = f.lugarAlmacenamiento,
-            sincronizado = res.isSuccess
+            sincronizado = false
         )
-        frutaDao.insertFruta(entity)
-        return res
+        frutaDao.insertFruta(initialEntity)
+        val localRecord = frutaDao.getAllFrutas().find { it.nombre == f.nombre && it.remoteId == 0 }
+
+        // 2. Remoto
+        val res = frutaApi.enviarFruta(f)
+        
+        res.onSuccess { savedFruta ->
+            // 3. Unir identidades
+            if (localRecord != null) {
+                frutaDao.insertFruta(FrutaEntity(
+                    localId = localRecord.localId,
+                    remoteId = savedFruta.id,
+                    nombre = savedFruta.nombre,
+                    cantidad = savedFruta.cantidad,
+                    fechaCaducidad = savedFruta.fechaCaducidad,
+                    lugarAlmacenamiento = savedFruta.lugarAlmacenamiento,
+                    sincronizado = true
+                ))
+            }
+        }
+        
+        return Result.success(res.isSuccess)
     }
 
     suspend fun eliminarFruta(localId: Int, remoteId: Int): Result<Boolean> {
@@ -152,6 +199,8 @@ class OfflineRepository(context: Context) {
                 val res = productosApi.obtenerCompras()
                 res.productos.forEach { p ->
                     val existing = compraDao.getByRemoteId(p.id)
+                        ?: compraDao.getAllCompras().find { it.nombreProducto == p.nombreProducto && it.remoteId == 0 }
+
                     compraDao.insertCompra(CompraEntity(
                         localId = existing?.localId ?: 0,
                         remoteId = p.id,
@@ -171,6 +220,16 @@ class OfflineRepository(context: Context) {
     }
 
     suspend fun guardarCompra(f: Fruta): Result<Boolean> {
+        // 1. Local
+        compraDao.insertCompra(CompraEntity(
+            nombreProducto = f.nombre,
+            cantidad = f.cantidad,
+            fechaCaducidad = f.fechaCaducidad,
+            tipoAlmacenamiento = f.lugarAlmacenamiento,
+            sincronizado = false
+        ))
+        val localRecord = compraDao.getAllCompras().find { it.nombreProducto == f.nombre && it.remoteId == 0 }
+
         val p = Producto(
             id = f.id,
             nombreProducto = f.nombre,
@@ -179,26 +238,35 @@ class OfflineRepository(context: Context) {
             fechaCaducidad = f.fechaCaducidad,
             tipoAlmacenamiento = f.lugarAlmacenamiento
         )
+        
+        // 2. Remoto
         val res = try {
             val response = KtorClient.client.post("${KtorClient.BASE_URL}/api/compras") {
                 contentType(ContentType.Application.Json)
                 KtorClient.sessionToken?.let { header(HttpHeaders.Authorization, "Bearer $it") }
                 setBody(p)
             }
-            Result.success(response.status.value in 200..299)
+            if (response.status.value in 200..299) {
+                val saved = response.body<Producto>()
+                // 3. Unir
+                if (localRecord != null) {
+                    compraDao.insertCompra(CompraEntity(
+                        localId = localRecord.localId,
+                        remoteId = saved.id,
+                        nombreProducto = saved.nombreProducto,
+                        cantidad = saved.cantidad,
+                        fechaCaducidad = saved.fechaCaducidad,
+                        tipoAlmacenamiento = saved.tipoAlmacenamiento,
+                        comprado = !saved.disponible,
+                        sincronizado = true
+                    ))
+                }
+                Result.success(true)
+            } else Result.failure(Exception("Error ${response.status.value}"))
         } catch (e: Exception) {
             Result.failure(e)
         }
 
-        compraDao.insertCompra(CompraEntity(
-            localId = f.localId,
-            remoteId = f.id,
-            nombreProducto = f.nombre,
-            cantidad = f.cantidad,
-            fechaCaducidad = f.fechaCaducidad,
-            tipoAlmacenamiento = f.lugarAlmacenamiento,
-            sincronizado = res.isSuccess
-        ))
         return res
     }
 
@@ -223,6 +291,8 @@ class OfflineRepository(context: Context) {
                 val res = productosApi.obtenerProductos()
                 res.productos.forEach { p ->
                     val existing = productoRama2Dao.getByRemoteId(p.id)
+                        ?: productoRama2Dao.getAll().find { it.nombreProducto == p.nombreProducto && it.remoteId == 0 }
+
                     productoRama2Dao.insert(ProductoRama2Entity(
                         localId = existing?.localId ?: 0,
                         remoteId = p.id,

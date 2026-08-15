@@ -50,7 +50,7 @@ class RecetaApiClient {
     private val client = KtorClient.client
     private val BASE_URL = KtorClient.BASE_URL + "/api/recetas"
 
-    suspend fun enviarReceta(receta: Receta): Result<Boolean> {
+    suspend fun enviarReceta(receta: Receta): Result<Receta> {
         return try {
             val response = client.post(BASE_URL) {
                 contentType(ContentType.Application.Json)
@@ -61,8 +61,10 @@ class RecetaApiClient {
             android.util.Log.d("DEPURACION_ALBAHACA", "Respuesta enviarReceta: $status")
             if (status == 401) {
                 Result.failure(Exception("401"))
+            } else if (status in 200..299) {
+                Result.success(response.body())
             } else {
-                Result.success(status in 200..299)
+                Result.failure(Exception("Error $status"))
             }
         } catch (e: Exception) {
             android.util.Log.e("DEPURACION_ALBAHACA", "Error enviando receta: ${e.message}")

@@ -11,7 +11,7 @@ class FrutaApiClient {
     private val client = KtorClient.client
     private val BASE_URL = KtorClient.BASE_URL
 
-    suspend fun enviarFruta(fruta: Fruta): Result<Boolean> {
+    suspend fun enviarFruta(fruta: Fruta): Result<Fruta> {
         return try {
             val response = client.post("$BASE_URL/api/frutas") {
                 contentType(ContentType.Application.Json)
@@ -20,8 +20,10 @@ class FrutaApiClient {
             }
             if (response.status.value == 401) {
                 Result.failure(Exception("401"))
+            } else if (response.status.value in 200..299) {
+                Result.success(response.body())
             } else {
-                Result.success(response.status.value in 200..299)
+                Result.failure(Exception("Error ${response.status.value}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

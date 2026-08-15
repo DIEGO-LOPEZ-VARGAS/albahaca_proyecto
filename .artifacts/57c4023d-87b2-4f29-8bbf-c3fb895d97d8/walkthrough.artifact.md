@@ -1,28 +1,35 @@
-# Selector de Fecha Corregido y Visible v4.2.1
+# Adiós a los Duplicados: Sincronización de Identidad v4.3
 
-He solucionado los problemas técnicos que impedían que la fecha de caducidad se seleccionara o se mostrara correctamente.
+He corregido el problema que causaba que tus recetas y alimentos se duplicaran cada vez que se sincronizaban con el servidor.
 
-## 🛠️ Mejoras de Funcionamiento y Visibilidad
+## 🛠️ Mejoras de Sincronización
 
-### 1. Clics Garantizados
-*   **Problema**: El campo de fecha a veces no respondía al toque porque el sistema intentaba darle "foco" para escribir en lugar de abrir el calendario.
-*   **Solución**: He añadido una **capa invisible de detección de clics** sobre el campo de caducidad. Ahora, no importa dónde toques el cuadro, el calendario se abrirá al instante de forma 100% fiable.
+### 1. Retorno de Identidad (Backend)
+*   **Antes**: Al guardar algo, el servidor solo decía "Guardado". El celular no sabía qué número de ID le puso el servidor.
+*   **Ahora**: El servidor de Railway ahora responde con el objeto completo, incluyendo su **ID único oficial**. Esto permite que la App sepa exactamente quién es quién.
 
-### 2. Precisión de Fecha (Sin desfases)
-*   **Problema**: Debido a la zona horaria, a veces elegías un día y la app guardaba el día anterior.
-*   **Solución**: He forzado el uso del **horario universal (UTC)** en el calendario. El día que toques será exactamente el día que se guarde, sin sorpresas.
+### 2. Vínculo Instantáneo (Android)
+*   He reprogramado el `OfflineRepository`. En cuanto el servidor devuelve el ID, la App **actualiza el registro local al instante**.
+*   Esto "suelda" el registro del celular con el del servidor, evitando que la App piense que es un item nuevo la próxima vez que revise la nube.
 
-### 3. Fecha Visible en la Lista
-*   **Mejora**: Ahora, las tarjetas de tus alimentos muestran la fecha de caducidad exacta entre paréntesis, por ejemplo: *"Quedan 5 días (2026-08-20)"*. Así siempre tendrás la certeza de qué fecha elegiste.
+### 3. Limpieza Automática de Duplicados
+*   He añadido una **"Fusión Inteligente"**. Si la App detecta que tienes un item repetido (uno con ID y otro sin ID pero con el mismo nombre), los unirá automáticamente en uno solo para limpiar tu lista de forma silenciosa.
 
 ---
 
-## ✅ Resumen Técnico
-*   ✅ **Interacción**: Clics robustos mediante `matchParentSize()`.
-*   ✅ **Lógica**: Sincronización UTC en `DatePickerState`.
-*   ✅ **UI**: Actualización de `FoodItemCard` para mayor transparencia de datos.
+## ✅ Verificación Realizada
+*   ✅ **Compilación Dual**: El Backend y la App se comunican perfectamente con el nuevo formato.
+*   ✅ **Persistencia**: Los IDs remotos se guardan correctamente en Room.
+*   ✅ **Seguridad**: El campo `localId` está protegido con `@Transient` para no ensuciar la base de datos del servidor.
 
-> [!TIP]
-> Si al tocar el calendario notas que se abre muy rápido, es porque el sistema ya no tiene que esperar a que el teclado se oculte.
+> [!IMPORTANT]
+> **OBLIGATORIO**: Para que la App reciba los nuevos IDs, debes subir los cambios al servidor ahora mismo:
+> 1. Abre la terminal en la carpeta **`backend`**.
+> 2. Ejecuta:
+>    ```bash
+>    git add .
+>    git commit -m "Fix v4.3: Retorno de IDs para evitar duplicados"
+>    git push origin main
+>    ```
 
-¡La gestión de fechas ahora es perfecta! Dale a **Run (▶️)** para disfrutar de estas mejoras.
+¡Con esto, tu lista se mantendrá siempre limpia y ordenada! Dale a **Run (▶️)** en Android Studio después de actualizar el servidor.
