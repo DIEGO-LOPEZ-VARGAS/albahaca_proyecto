@@ -1,6 +1,7 @@
 package com.example.albahacaproyecto
 
 import android.content.Context
+import android.content.ContextWrapper
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
@@ -10,7 +11,22 @@ import kotlin.coroutines.resume
 
 class AndroidBiometricHelper(private val context: Context) {
 
+<<<<<<< Updated upstream
     // 🔥 Nombre restaurado a lanzarLectorHuella para que coincida con tu loggin.kt
+=======
+    // Función privada para extraer el FragmentActivity sin importar los wrappers de Compose
+    private fun findFragmentActivity(): FragmentActivity? {
+        var currentContext = context
+        while (currentContext is ContextWrapper) {
+            if (currentContext is FragmentActivity) {
+                return currentContext
+            }
+            currentContext = currentContext.baseContext
+        }
+        return null
+    }
+
+>>>>>>> Stashed changes
     suspend fun lanzarLectorHuella(): Boolean = suspendCancellableCoroutine { continuation ->
         val biometricManager = BiometricManager.from(context)
 
@@ -18,17 +34,18 @@ class AndroidBiometricHelper(private val context: Context) {
         val authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK
 
         if (biometricManager.canAuthenticate(authenticators) != BiometricManager.BIOMETRIC_SUCCESS) {
-            continuation.resume(false)
+            if (continuation.isActive) continuation.resume(false)
+            return@suspendCancellableCoroutine
+        }
+
+        // Obtención segura del FragmentActivity
+        val activity = findFragmentActivity()
+        if (activity == null) {
+            if (continuation.isActive) continuation.resume(false)
             return@suspendCancellableCoroutine
         }
 
         val executor = ContextCompat.getMainExecutor(context)
-        val activity = context as? FragmentActivity
-
-        if (activity == null) {
-            continuation.resume(false)
-            return@suspendCancellableCoroutine
-        }
 
         val biometricPrompt = BiometricPrompt(activity, executor, object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
