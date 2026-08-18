@@ -1,5 +1,7 @@
 package com.example.albahacaproyecto
 
+import android.content.Context
+import android.content.ContextWrapper
 import android.widget.Toast
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -17,7 +19,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -29,11 +30,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.launch
-
-// ─────────────────────────────────────────────────────────────────────────────
-// COLORES DEL SISTEMA "VERDURITAS"
-// ─────────────────────────────────────────────────────────────────────────────
 
 val VerduritasPrimary = Color(0xFF632CE5)
 val VerduritasSecondary = Color(0xFF006E2A)
@@ -42,9 +40,21 @@ val VerduritasSurface = Color(0xFFFFFFFF)
 val VerduritasOnSurfaceVariant = Color(0xFF494455)
 val VerduritasOutline = Color(0xFF7A7487)
 
+// Función auxiliar para obtener la FragmentActivity válida requerida por BiometricPrompt
+fun Context.findFragmentActivity(): FragmentActivity? {
+    var currentContext = this
+    while (currentContext is ContextWrapper) {
+        if (currentContext is FragmentActivity) {
+            return currentContext
+        }
+        currentContext = currentContext.baseContext
+    }
+    return null
+}
+
 @Composable
-fun DefinitiveLoginScreen(onLoginExitoso: () -> Unit = {}) {
-    var screenState by remember { mutableStateOf("login") } // "login" o "register"
+fun DefinitiveLoginScreen(onLoginExitoso: (Boolean) -> Unit = {}) {
+    var screenState by remember { mutableStateOf("login") }
 
     if (screenState == "login") {
         LoginContent(
@@ -59,7 +69,7 @@ fun DefinitiveLoginScreen(onLoginExitoso: () -> Unit = {}) {
 }
 
 @Composable
-fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
+fun LoginContent(onLoginExitoso: (Boolean) -> Unit, onGoToRegister: () -> Unit) {
     var usuario by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -67,24 +77,33 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    
+<<<<<<< Updated upstream
+=======
     val sessionManager = remember { SessionManager(context) }
+>>>>>>> Stashed changes
 
-    // Inicialización del ayudante biométrico
-    val biometricHelper = remember { AndroidBiometricHelper(context) }
+    // Cargar token guardado si existe
+    val savedToken = remember { sessionManager.getToken() }
 
-    // 🔥 DISPARADOR AUTOMÁTICO DE HUELLA
-    // Si la App detecta que ya hay una sesión guardada, lanza el lector nada más abrirse
+<<<<<<< Updated upstream
+=======
     LaunchedEffect(Unit) {
-        if (KtorClient.sessionToken != null) {
-            val exito = biometricHelper.lanzarLectorHuella()
-            if (exito) {
-                Toast.makeText(context, "¡Acceso concedido!", Toast.LENGTH_SHORT).show()
-                onLoginExitoso()
+        if (!savedToken.isNullOrEmpty()) {
+            val activity = context.findFragmentActivity()
+            if (activity != null) {
+                val biometricHelper = AndroidBiometricHelper(activity)
+                val exito = biometricHelper.lanzarLectorHuella()
+                if (exito) {
+                    Toast.makeText(context, "¡Acceso concedido!", Toast.LENGTH_SHORT).show()
+                    val savedUser = sessionManager.getUserName() ?: ""
+                    val esAdmin = savedUser.lowercase().trim() == "admin"
+                    onLoginExitoso(esAdmin)
+                }
             }
         }
     }
 
+>>>>>>> Stashed changes
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -98,7 +117,6 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
                 )
             )
     ) {
-        // Iconos decorativos flotantes
         FloatingIcon(Icons.Default.Egg, VerduritasSecondary, 0.2f, 80.dp, Modifier.align(Alignment.TopStart).padding(40.dp))
         FloatingIcon(Icons.Default.Eco, VerduritasSecondary, 0.1f, 60.dp, Modifier.align(Alignment.CenterStart).offset(x = (-20).dp))
         FloatingIcon(Icons.Default.Spa, VerduritasPrimary, 0.2f, 90.dp, Modifier.align(Alignment.BottomEnd).padding(bottom = 80.dp, end = 20.dp))
@@ -112,7 +130,6 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
         ) {
             Spacer(Modifier.height(40.dp))
 
-            // Header AppBar
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
@@ -135,7 +152,6 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
 
             Spacer(Modifier.height(40.dp))
 
-            // Login Card
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -149,7 +165,6 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Avatar Icon
                     Box(
                         modifier = Modifier
                             .size(96.dp)
@@ -180,7 +195,6 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
 
                     Spacer(Modifier.height(32.dp))
 
-                    // Username Field
                     VerduritasTextField(
                         value = usuario,
                         onValueChange = { usuario = it },
@@ -191,7 +205,6 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
 
                     Spacer(Modifier.height(16.dp))
 
-                    // Password Field
                     VerduritasTextField(
                         value = contrasena,
                         onValueChange = { contrasena = it },
@@ -203,23 +216,13 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
                         onPasswordToggle = { passwordVisible = !passwordVisible }
                     )
 
-                    Text(
-                        text = "¿Olvidaste tu contraseña?",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = VerduritasPrimary,
-                        modifier = Modifier
-                            .align(Alignment.End)
-                            .padding(top = 8.dp)
-                    )
-
                     Spacer(Modifier.height(32.dp))
 
-                    // Entrar Button
                     Button(
                         onClick = {
                             coroutineScope.launch {
                                 isLoading = true
+<<<<<<< Updated upstream
 
                                 // Llamamos a RailwayKtorService y recibimos el error detallado (o null)
                                 val errorLogin = RailwayKtorService.loginUsuario(context, usuario, contrasena)
@@ -230,10 +233,19 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
                                     // Cambia de pantalla (Ejecuta la lambda de éxito)
                                     onLoginExitoso()
                                 } else {
-                                    // Mostramos el error REAL en pantalla
-                                    Toast.makeText(context, errorLogin, Toast.LENGTH_LONG).show()
-                                }
+                                    // Si regresa falso, asumimos credenciales incorrectas o error en el servidor
+                                    Toast.makeText(context, "Credenciales inválidas", Toast.LENGTH_SHORT).show()
+=======
+                                val errorLogin = RailwayKtorService.loginUsuario(context, usuario, contrasena)
 
+                                if (errorLogin == null) {
+                                    sessionManager.saveSession(KtorClient.sessionToken, KtorClient.userName)
+                                    val esAdmin = usuario.lowercase().trim() == "admin" || (KtorClient.userName?.lowercase()?.trim() == "admin")
+                                    onLoginExitoso(esAdmin)
+                                } else {
+                                    Toast.makeText(context, errorLogin, Toast.LENGTH_LONG).show()
+>>>>>>> Stashed changes
+                                }
                                 isLoading = false
                             }
                         },
@@ -257,20 +269,28 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
 
                     Spacer(Modifier.height(16.dp))
 
-                    // 🔥 BOTÓN DEL SENSOR BIOMÉTRICO (HUELLA DIGITAL)
+                    // Botón de Huella Digital Ajustado
                     IconButton(
                         onClick = {
-                            if (KtorClient.sessionToken == null) {
-                                Toast.makeText(context, "Inicia sesión con contraseña primero para habilitar la huella", Toast.LENGTH_LONG).show()
+<<<<<<< Updated upstream
+=======
+                            val activity = context.findFragmentActivity()
+                            if (activity == null) {
+                                Toast.makeText(context, "Error: Contexto de Activity no válido", Toast.LENGTH_SHORT).show()
                                 return@IconButton
                             }
+
+                            val biometricHelper = AndroidBiometricHelper(activity)
+>>>>>>> Stashed changes
                             coroutineScope.launch {
                                 val exito = biometricHelper.lanzarLectorHuella()
                                 if (exito) {
                                     Toast.makeText(context, "¡Acceso biométrico concedido!", Toast.LENGTH_SHORT).show()
-                                    onLoginExitoso()
+                                    val userGuardado = sessionManager.getUserName() ?: ""
+                                    val esAdmin = userGuardado.lowercase().trim() == "admin"
+                                    onLoginExitoso(esAdmin)
                                 } else {
-                                    Toast.makeText(context, "Autenticación fallida", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Autenticación fallida o cancelada", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },
@@ -303,7 +323,6 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
 
                     Spacer(Modifier.height(24.dp))
 
-                    // Crear Cuenta Button
                     OutlinedButton(
                         onClick = onGoToRegister,
                         modifier = Modifier
@@ -323,7 +342,6 @@ fun LoginContent(onLoginExitoso: () -> Unit, onGoToRegister: () -> Unit) {
 
             Spacer(Modifier.height(40.dp))
 
-            // Footer
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                     Icon(Icons.Default.SelfImprovement, null, Modifier.size(24.dp).alpha(0.4f), VerduritasPrimary)
