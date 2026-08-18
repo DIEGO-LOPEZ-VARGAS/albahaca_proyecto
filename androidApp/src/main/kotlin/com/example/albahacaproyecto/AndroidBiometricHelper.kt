@@ -11,9 +11,9 @@ import kotlin.coroutines.resume
 
 class AndroidBiometricHelper(private val context: Context) {
 
-<<<<<<< Updated upstream
+
     // 🔥 Nombre restaurado a lanzarLectorHuella para que coincida con tu loggin.kt
-=======
+
     // Función privada para extraer el FragmentActivity sin importar los wrappers de Compose
     private fun findFragmentActivity(): FragmentActivity? {
         var currentContext = context
@@ -26,7 +26,6 @@ class AndroidBiometricHelper(private val context: Context) {
         return null
     }
 
->>>>>>> Stashed changes
     suspend fun lanzarLectorHuella(): Boolean = suspendCancellableCoroutine { continuation ->
         val biometricManager = BiometricManager.from(context)
 

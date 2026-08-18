@@ -40,7 +40,6 @@ val VerduritasSurface = Color(0xFFFFFFFF)
 val VerduritasOnSurfaceVariant = Color(0xFF494455)
 val VerduritasOutline = Color(0xFF7A7487)
 
-// Función auxiliar para obtener la FragmentActivity válida requerida por BiometricPrompt
 fun Context.findFragmentActivity(): FragmentActivity? {
     var currentContext = this
     while (currentContext is ContextWrapper) {
@@ -77,16 +76,9 @@ fun LoginContent(onLoginExitoso: (Boolean) -> Unit, onGoToRegister: () -> Unit) 
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-<<<<<<< Updated upstream
-=======
     val sessionManager = remember { SessionManager(context) }
->>>>>>> Stashed changes
-
-    // Cargar token guardado si existe
     val savedToken = remember { sessionManager.getToken() }
 
-<<<<<<< Updated upstream
-=======
     LaunchedEffect(Unit) {
         if (!savedToken.isNullOrEmpty()) {
             val activity = context.findFragmentActivity()
@@ -103,7 +95,6 @@ fun LoginContent(onLoginExitoso: (Boolean) -> Unit, onGoToRegister: () -> Unit) 
         }
     }
 
->>>>>>> Stashed changes
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -222,20 +213,6 @@ fun LoginContent(onLoginExitoso: (Boolean) -> Unit, onGoToRegister: () -> Unit) 
                         onClick = {
                             coroutineScope.launch {
                                 isLoading = true
-<<<<<<< Updated upstream
-
-                                // Llamamos a RailwayKtorService y recibimos el error detallado (o null)
-                                val errorLogin = RailwayKtorService.loginUsuario(context, usuario, contrasena)
-
-                                if (errorLogin == null) {
-                                    // Guardar la sesión de forma persistente (Token y Nombre)
-                                    sessionManager.saveSession(KtorClient.sessionToken, KtorClient.userName)
-                                    // Cambia de pantalla (Ejecuta la lambda de éxito)
-                                    onLoginExitoso()
-                                } else {
-                                    // Si regresa falso, asumimos credenciales incorrectas o error en el servidor
-                                    Toast.makeText(context, "Credenciales inválidas", Toast.LENGTH_SHORT).show()
-=======
                                 val errorLogin = RailwayKtorService.loginUsuario(context, usuario, contrasena)
 
                                 if (errorLogin == null) {
@@ -244,7 +221,6 @@ fun LoginContent(onLoginExitoso: (Boolean) -> Unit, onGoToRegister: () -> Unit) 
                                     onLoginExitoso(esAdmin)
                                 } else {
                                     Toast.makeText(context, errorLogin, Toast.LENGTH_LONG).show()
->>>>>>> Stashed changes
                                 }
                                 isLoading = false
                             }
@@ -269,11 +245,8 @@ fun LoginContent(onLoginExitoso: (Boolean) -> Unit, onGoToRegister: () -> Unit) 
 
                     Spacer(Modifier.height(16.dp))
 
-                    // Botón de Huella Digital Ajustado
                     IconButton(
                         onClick = {
-<<<<<<< Updated upstream
-=======
                             val activity = context.findFragmentActivity()
                             if (activity == null) {
                                 Toast.makeText(context, "Error: Contexto de Activity no válido", Toast.LENGTH_SHORT).show()
@@ -281,7 +254,6 @@ fun LoginContent(onLoginExitoso: (Boolean) -> Unit, onGoToRegister: () -> Unit) 
                             }
 
                             val biometricHelper = AndroidBiometricHelper(activity)
->>>>>>> Stashed changes
                             coroutineScope.launch {
                                 val exito = biometricHelper.lanzarLectorHuella()
                                 if (exito) {

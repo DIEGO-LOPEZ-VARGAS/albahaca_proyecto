@@ -17,9 +17,6 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-<<<<<<< Updated upstream
-            var isLoggedIn by remember { mutableStateOf(false) }
-=======
             val context = LocalContext.current
             val sessionManager = remember { SessionManager(context) }
             val scope = rememberCoroutineScope()
@@ -92,7 +89,6 @@ class MainActivity : FragmentActivity() {
                     }
                 )
             }
->>>>>>> Stashed changes
 
             MaterialTheme {
                 Surface(
@@ -100,11 +96,6 @@ class MainActivity : FragmentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     if (!isLoggedIn) {
-<<<<<<< Updated upstream
-                        DefinitiveLoginScreen(onLoginExitoso = { isLoggedIn = true })
-                    } else {
-                        MainMenuScreen()
-=======
                         DefinitiveLoginScreen(onLoginExitoso = { usuarioEsAdmin ->
                             esAdmin = usuarioEsAdmin
                             isLoggedIn = true
@@ -123,7 +114,6 @@ class MainActivity : FragmentActivity() {
                                 esAdmin = false
                             })
                         }
->>>>>>> Stashed changes
                     }
                 }
             }

@@ -8,23 +8,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-<<<<<<< Updated upstream
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import com.example.albahacaproyecto.database.OfflineRepository
 import androidx.compose.ui.platform.LocalContext
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PANTALLA
-// ─────────────────────────────────────────────────────────────────────────────
-=======
-import com.example.albahacaproyecto.database.OfflineRepository
-import kotlinx.coroutines.launch
->>>>>>> Stashed changes
 
 @Composable
 fun ListaComprasScreen() {
@@ -33,19 +23,15 @@ fun ListaComprasScreen() {
     val amarilloFondo       = Color(0xFFFFFBEB)
     val amarilloTexto       = Color(0xFF92400E)
 
-<<<<<<< Updated upstream
-    var isLoading        by remember { mutableStateOf(value = false) }
-    var mensajeExito     by remember { mutableStateOf<String?>(null) }
-    var filtro           by remember { mutableStateOf("todos") } // todos, pendientes, comprados
-=======
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val offlineRepo = remember { OfflineRepository(context) }
-
+    
     val todosLosItems by offlineRepo.getComprasFlow().collectAsState(initial = emptyList())
 
+    var isLoading        by remember { mutableStateOf(value = false) }
+    var mensajeExito     by remember { mutableStateOf<String?>(null) }
     var filtro           by remember { mutableStateOf("todos") }
->>>>>>> Stashed changes
     var mostrarDialogo   by remember { mutableStateOf(false) }
     var nuevoNombre      by remember { mutableStateOf("") }
     var nuevaCantidad    by remember { mutableStateOf("1") }
@@ -55,7 +41,6 @@ fun ListaComprasScreen() {
         else -> todosLosItems
     }
 
-    // ── Diálogo agregar producto ──────────────────────────────────────────
     if (mostrarDialogo) {
         AlertDialog(
             onDismissRequest = { mostrarDialogo = false },
@@ -141,8 +126,6 @@ fun ListaComprasScreen() {
                 .padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
-            // ── Tarjeta Agregar Producto ────────────────────────────────────────
             item {
                 ElevatedCard(
                     shape = RoundedCornerShape(20.dp),
@@ -150,7 +133,6 @@ fun ListaComprasScreen() {
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-<<<<<<< Updated upstream
                         Text("Sincronizar desde servidor", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         Text("Sincronización persistente Room", fontSize = 12.sp, color = grisTextoSecundario)
                         mensajeExito?.let { Text(it, fontSize = 11.sp, color = Color(0xFF4CAF50)) }
@@ -177,23 +159,11 @@ fun ListaComprasScreen() {
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0)),
                                 modifier = Modifier.weight(1f)
                             ) { Text("➕ Agregar") }
-=======
-                        Text("Agregar nuevo producto", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("Añade elementos a tu lista de compras rápida", fontSize = 12.sp, color = grisTextoSecundario)
-                        Spacer(Modifier.height(12.dp))
-                        Button(
-                            onClick = { mostrarDialogo = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = verdePrincipal),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("➕ Agregar producto")
->>>>>>> Stashed changes
                         }
                     }
                 }
             }
 
-            // ── Estadísticas ──────────────────────────────────────────────
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -204,14 +174,12 @@ fun ListaComprasScreen() {
                 }
             }
 
-            // ── Filtros ───────────────────────────────────────────────────
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(selected = filtro == "todos", onClick = { filtro = "todos" }, label = { Text("Todos") })
                 }
             }
 
-            // ── Lista ─────────────────────────────────────────────────────
             if (itemsFiltrados.isEmpty()) {
                 item {
                     Text(
@@ -221,13 +189,11 @@ fun ListaComprasScreen() {
                     )
                 }
             } else {
-                items(count = itemsFiltrados.size) { index: Int ->
+                items(count = itemsFiltrados.size) { index ->
                     val itemCompra = itemsFiltrados[index]
                     ElevatedCard(
                         shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = Color.White
-                        ),
+                        colors = CardDefaults.elevatedCardColors(containerColor = Color.White),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -253,15 +219,11 @@ fun ListaComprasScreen() {
                                     color = grisTextoSecundario
                                 )
                             }
-<<<<<<< Updated upstream
-                            IconButton(onClick = { ComprasRepository.eliminar(itemCompra.id) }) {
-=======
                             IconButton(onClick = {
                                 scope.launch {
                                     offlineRepo.eliminarCompra(itemCompra.localId, itemCompra.id)
                                 }
                             }) {
->>>>>>> Stashed changes
                                 Text("🗑️", fontSize = 18.sp)
                             }
                         }
