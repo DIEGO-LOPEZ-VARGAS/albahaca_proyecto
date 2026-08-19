@@ -10,6 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.example.albahacaproyecto.database.OfflineRepository
 import kotlinx.coroutines.launch
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.Manifest
+import android.os.Build
 
 class MainActivity : FragmentActivity() {
 
@@ -20,6 +24,19 @@ class MainActivity : FragmentActivity() {
             val context = LocalContext.current
             val sessionManager = remember { SessionManager(context) }
             val scope = rememberCoroutineScope()
+
+            // 🔥 Launcher para el permiso de notificaciones (Android 13+)
+            val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) { }
+
+            // Inicializar canales de notificación al arrancar
+            LaunchedEffect(Unit) {
+                NotificationHelper.initChannels(context)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
 
             var isLoggedIn by remember { mutableStateOf(false) }
             var esAdmin by remember { mutableStateOf(false) }
@@ -45,6 +62,8 @@ class MainActivity : FragmentActivity() {
                         if (urgentes.isNotEmpty()) {
                             itemsPorCaducar = urgentes
                             mostrarAlertaCaducidad = true
+                            // 🔥 DISPARAR NOTIFICACIÓN NATIVA
+                            NotificationHelper.enviarAlertaCaducidad(context, urgentes)
                         }
                     } catch (e: Exception) {
                         android.util.Log.e("ALERTA", "Falla al revisar caducidad")

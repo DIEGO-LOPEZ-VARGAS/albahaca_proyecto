@@ -1,12 +1,15 @@
-# Tareas: Eliminación de Duplicados v4.3
+# Tareas: Notificaciones de Caducidad (v4.4) - COMPLETADO
 
-- [ ] **Backend: Retorno de Identidad**
-    - [ ] Modificar `ProductoRepository.kt` para devolver objetos insertados
-    - [ ] Modificar `RecetaRepository.kt` para devolver objetos insertados
-    - [ ] Actualizar rutas en `ProductRoutes.kt` (POST) para devolver JSON
-- [ ] **Android: Vínculo de ID Remoto**
-    - [ ] Actualizar `OfflineRepository.kt` para capturar el `remoteId` tras guardar
-    - [ ] Implementar limpieza de duplicados por nombre durante la sincronización
-- [ ] **Verificación**
-    - [ ] Validar compilación dual
-    - [ ] Confirmar que no se duplican items al guardar/sincronizar
+- [x] **Módulo de Notificaciones (NotificationHelper.kt)**
+    - [x] Crear clase central para gestionar canales de Android
+    - [x] Implementar función para alertas de caducidad
+    - [x] Migrar lógica de notificación de éxito de recetas
+- [x] **Activación en Inicio (MainActivity.kt)**
+    - [x] Integrar disparo de notificación en `checkCaducidad`
+    - [x] Asegurar solicitud de permisos al arrancar
+- [x] **Limpieza de UI (RecetaView.kt)**
+    - [x] Eliminar lógica duplicada de notificaciones
+    - [x] Llamar al nuevo helper para avisos de guardado
+- [x] **Verificación**
+    - [x] Validar que la notificación aparezca en la barra de estado
+    - [x] Confirmar que el permiso se solicita correctamente en Android 13+

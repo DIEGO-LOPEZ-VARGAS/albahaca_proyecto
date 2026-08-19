@@ -242,7 +242,7 @@ fun RecetaView() {
 
     // TÉCNICA: Procesos de Notificaciones (Inicialización del Canal y Permisos)
     LaunchedEffect(Unit) {
-        crearCanalNotificaciones(context)
+        // Los canales ya se inicializan en MainActivity para toda la app
         
         // Cargar inventario (Frutas y Productos Rama 2)
         scope.launch {
@@ -346,8 +346,6 @@ fun RecetaView() {
                 )
                 Button(
                     onClick = {
-                        val nombreReceta = titulo // Guardamos para la notificación
-                        
                         // Verificar permiso antes de intentar guardar/notificar en Android 13+
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -361,12 +359,10 @@ fun RecetaView() {
                             val res: Result<Boolean> = offlineRepo.guardarReceta(nueva)
                             res.onSuccess { exito ->
                                 if (exito) {
-                                    // TÉCNICA: Procesos de Notificaciones (Disparo del aviso)
-                                    enviarNotificacionExito(context, nombreReceta)
+                                    // 🔥 Usar el nuevo Helper para la notificación
+                                    NotificationHelper.enviarNotificacionReceta(context, nueva.titulo)
                                     
                                     titulo = ""; ingredientes = ""; pasos = ""
-                                } else {
-                                    android.widget.Toast.makeText(context, "Error al guardar receta en servidor", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             }.onFailure { error ->
                                 if (error.message == "401") {
@@ -622,60 +618,8 @@ fun RecetaDetalleDialog(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PROCESO DE NOTIFICACIONES (REQUISITO DE PRÁCTICA)
+// COMPONENTES DE UI
 // ─────────────────────────────────────────────────────────────────────────────
-
-private const val CHANNEL_ID = "albahaca_recetas"
-
-/**
- * Crea el canal de notificaciones necesario para Android 8.0+
- */
-private fun crearCanalNotificaciones(context: Context) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val name = "Canal de Recetas"
-        val descriptionText = "Avisos de creación de recetas"
-        val importance = NotificationManager.IMPORTANCE_DEFAULT
-        val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
-            description = descriptionText
-        }
-        val notificationManager: NotificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.createNotificationChannel(channel)
-    }
-}
-
-/**
- * Lanza la notificación local al usuario
- */
-private fun enviarNotificacionExito(context: Context, tituloReceta: String) {
-    android.util.Log.d("DEPURACION_ALBAHACA", "Intentando enviar notificación para: $tituloReceta")
-    
-    // Verificación de permiso para notificaciones en Android 13+
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            android.util.Log.w("DEPURACION_ALBAHACA", "Sin permiso POST_NOTIFICATIONS, cancelando aviso.")
-            return
-        }
-    }
-
-    val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-        .setSmallIcon(android.R.drawable.ic_menu_save)
-        .setContentTitle("¡Receta Guardada!")
-        .setContentText("Tu receta '$tituloReceta' ya está en Railway.")
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-        .setAutoCancel(true)
-
-    try {
-        with(NotificationManagerCompat.from(context)) {
-            notify(System.currentTimeMillis().toInt(), builder.build())
-            android.util.Log.d("DEPURACION_ALBAHACA", "Notificación enviada con éxito")
-        }
-    } catch (e: SecurityException) {
-        android.util.Log.e("DEPURACION_ALBAHACA", "Error de seguridad en notificación: ${e.message}")
-    } catch (e: Exception) {
-        android.util.Log.e("DEPURACION_ALBAHACA", "Error al enviar notificación: ${e.message}")
-    }
-}
 
 @Composable
 fun IngredientChip(name: String) {

@@ -1,34 +1,35 @@
-# Plan de Emergencia: Limpieza de Conflictos de Git
+# Plan de Notificaciones de Caducidad (Versión Ligera) v4.4
 
-Este plan soluciona los errores de compilación masivos causados por marcas de conflicto (`<<<<<<<`, `=======`, `>>>>>>>`) en el código fuente.
-
-## Problemas Detectados
-
-### 1. Archivos Corruptos por Merge/Stash
-*   **MainActivity.kt**: Código duplicado en el bloque `setContent`.
-*   **loggin.kt**: El disparador de huella y el botón de login están entrelazados con marcas de Git.
-*   **ListaComprasScreen.kt**: La lógica de sincronización y el diseño de la lista tienen bloques de código en conflicto.
-
-### 2. Duplicidad de Declaraciones
-*   Variables como `filtro` e `isLoggedIn` aparecen dos veces debido a la mezcla de versiones.
+Este plan implementa las notificaciones del sistema para productos por caducar, pero eliminando cualquier proceso de vigilancia en segundo plano. La app solo avisará cuando esté abierta.
 
 ## Cambios Propuestos
 
-### Componente: Android App (Limpieza Quirúrgica)
+### 1. Centralización de Notificaciones
+
+#### [NUEVO] `NotificationHelper.kt`
+*   Crear una utilidad que gestione los canales de Android.
+*   Función `enviarAlertaCaducidad(context, listaProductos)`: Genera una notificación real en la barra de estado con el resumen de lo que va a vencer.
+
+### 2. Activación al Iniciar la App
 
 #### [MODIFICAR] [MainActivity.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/MainActivity.kt)
-*   Remover marcas de conflicto.
-*   Mantener la lógica de sesión persistente corregida.
+*   **Permisos**: Solicitar permiso de notificaciones (Android 13+) nada más entrar.
+*   **Lógica de Aviso**: Dentro de la función `checkCaducidad()`, además de mostrar el cuadro de texto (AlertDialog), ahora también disparará una **notificación oficial** en el celular.
+*   **Sin Segundo Plano**: Se elimina cualquier idea de usar `WorkManager`. La app solo revisa cuando tú la abres.
 
-#### [MODIFICAR] [loggin.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/loggin.kt)
-*   Limpiar el `LaunchedEffect` de la huella.
-*   Restaurar el botón de login con mensajes de error detallados.
+### 3. Limpieza de Código
 
-#### [MODIFICAR] [ListaComprasScreen.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/ListaComprasScreen.kt)
-*   Unificar la pantalla de compras usando el `OfflineRepository` persistente.
-*   Eliminar el código repetido de la tarjeta de sincronización.
+#### [MODIFICAR] [RecetaView.kt](file:///C:/Users/Darkar/StudioProjects/albahaca_proyecto/androidApp/src/main/kotlin/com/example/albahacaproyecto/RecetaView.kt)
+*   Mover la función `enviarNotificacionExito` al nuevo `NotificationHelper` para que todo esté ordenado en un solo lugar.
+
+## Beneficios
+*   **Privacidad**: No hay procesos ocultos corriendo cuando cierras la app.
+*   **Visibilidad**: Si minimizas la app para hacer otra cosa, la notificación te recordará lo que tienes que cocinar antes de que caduque.
+*   **Orden**: El código de notificaciones estará separado de las pantallas.
 
 ## Plan de Verificación
-1.  **Limpieza Visual**: Verificar que no queden marcas `<<<<`, `====` o `>>>>` en ningún archivo.
-2.  **Compilación**: Ejecutar build y asegurar que el estado sea **SUCCESS**.
-3.  **Funcionalidad**: Probar que la App abre, pide huella y muestra la lista de compras sin errores.
+1.  **Aceptación de Permisos**: Abrir la app y confirmar que pide permiso para notificar.
+2.  **Disparo de Alerta**: Tener un producto que caduque en 1 o 2 días y abrir la app.
+3.  **Resultado**: Debe aparecer el aviso arriba en el celular (junto al reloj y la batería).
+
+¿Te parece bien este enfoque más sencillo y respetuoso con el uso de tu celular?
